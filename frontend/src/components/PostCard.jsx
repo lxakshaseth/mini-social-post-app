@@ -27,6 +27,7 @@ function PostCard({
   const [editText, setEditText] = useState(post.text || "");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isTextExpanded, setIsTextExpanded] = useState(false);
 
   const isAuthor =
     currentUser &&
@@ -298,7 +299,32 @@ function PostCard({
           </div>
         </div>
       ) : (
-        post.text ? <p className="post-copy">{highlightText(post.text, searchTerm)}</p> : null
+        post.text ? (
+          <div className="post-copy-wrapper" style={{ margin: "10px 0" }}>
+            <p className="post-copy" style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+              {post.text.length > 280 && !isTextExpanded
+                ? highlightText(`${post.text.slice(0, 280)}...`, searchTerm)
+                : highlightText(post.text, searchTerm)}
+            </p>
+            {post.text.length > 280 && (
+              <button
+                type="button"
+                onClick={() => setIsTextExpanded((e) => !e)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  padding: "4px 0",
+                  color: "var(--primary, #3b82f6)",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  cursor: "pointer",
+                }}
+              >
+                {isTextExpanded ? "Show less" : "Read more"}
+              </button>
+            )}
+          </div>
+        ) : null
       )}
 
       {post.imageUrl ? (
