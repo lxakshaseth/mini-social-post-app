@@ -404,7 +404,26 @@ function App() {
       return;
     }
 
-    setBusyPostId(postId);
+    // Optimistic UI update for instant feedback
+    setPosts((current) =>
+      current.map((post) => {
+        if (post._id !== postId) return post;
+        const alreadyLiked = post.likes.some(
+          (l) => String(l.userId) === String(currentUser?._id)
+        );
+        const newLikes = alreadyLiked
+          ? post.likes.filter((l) => String(l.userId) !== String(currentUser?._id))
+          : [
+              {
+                userId: currentUser?._id,
+                username: currentUser?.name,
+                handle: currentUser?.handle,
+              },
+              ...post.likes,
+            ];
+        return { ...post, likes: newLikes };
+      })
+    );
 
     try {
       const updatedPost = await toggleLikeOnPost(postId, token);
@@ -412,9 +431,8 @@ function App() {
         current.map((post) => (post._id === updatedPost._id ? updatedPost : post))
       );
     } catch (error) {
+      loadPosts();
       setFlash({ type: "error", text: error.message });
-    } finally {
-      setBusyPostId("");
     }
   }
 
@@ -518,6 +536,19 @@ function App() {
       return;
     }
 
+    const currentSaved = currentUser?.savedPosts || [];
+    const isAlreadySaved = currentSaved.some(
+      (id) => String(id) === String(postId) || String(id?._id) === String(postId)
+    );
+    const optimisticSaved = isAlreadySaved
+      ? currentSaved.filter((id) => String(id) !== String(postId) && String(id?._id) !== String(postId))
+      : [postId, ...currentSaved];
+
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      return { ...prev, savedPosts: optimisticSaved };
+    });
+
     try {
       const result = await toggleBookmarkPost(postId, token);
       setCurrentUser((prev) => {
@@ -534,6 +565,7 @@ function App() {
         text: result.message || (result.isBookmarked ? "Post saved." : "Post removed from saved."),
       });
     } catch (error) {
+      setCurrentUser((prev) => (prev ? { ...prev, savedPosts: currentSaved } : prev));
       setFlash({ type: "error", text: error.message });
     }
   }

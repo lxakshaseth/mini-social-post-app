@@ -195,9 +195,73 @@ function FeedColumn({
       </div>
 
       {loadingPosts ? (
-        <div className="empty-state card">
-          <h3>Loading the community feed...</h3>
-          <p>Posts will appear here as soon as the server responds.</p>
+        <div className="feed-list">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="post-card card"
+              style={{
+                opacity: 0.7,
+                animation: "pulse 1.5s infinite ease-in-out",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "50%",
+                    background: "var(--border-color, #e2e8f0)",
+                  }}
+                />
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
+                  <div
+                    style={{
+                      height: "14px",
+                      width: "35%",
+                      borderRadius: "4px",
+                      background: "var(--border-color, #e2e8f0)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: "10px",
+                      width: "20%",
+                      borderRadius: "4px",
+                      background: "var(--border-color, #e2e8f0)",
+                    }}
+                  />
+                </div>
+              </div>
+              <div
+                style={{
+                  height: "14px",
+                  width: "90%",
+                  borderRadius: "4px",
+                  background: "var(--border-color, #e2e8f0)",
+                }}
+              />
+              <div
+                style={{
+                  height: "14px",
+                  width: "65%",
+                  borderRadius: "4px",
+                  background: "var(--border-color, #e2e8f0)",
+                }}
+              />
+              <div
+                style={{
+                  height: "180px",
+                  width: "100%",
+                  borderRadius: "8px",
+                  background: "var(--border-color, #e2e8f0)",
+                }}
+              />
+            </div>
+          ))}
         </div>
       ) : null}
 
