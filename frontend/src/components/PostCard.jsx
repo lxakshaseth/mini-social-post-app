@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, Check, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Sparkles, Trash2, X } from "lucide-react";
+import { Bookmark, Check, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Share2, Sparkles, Trash2, X } from "lucide-react";
 import { getImageUrl } from "../api";
 import { colorFromText, engagementScore, formatDate, relativeTime } from "../utils";
 import Avatar from "./Avatar";
@@ -18,6 +18,7 @@ function PostCard({
   onImageClick,
   onLike,
   onLikeComment,
+  onNotify,
   onToggleComments,
   post,
 }) {
@@ -46,13 +47,36 @@ function PostCard({
     setIsEditing(false);
   }
 
-  function handleCancelEdit() {
-    setEditText(post.text || "");
-    setIsEditing(false);
+  async function handleShare() {
+    const shareUrl = `${window.location.origin}/#post-${post._id}`;
+    const shareText = post.text
+      ? `${post.text.slice(0, 100)}... by @${post.authorHandle}`
+      : `Check out this post by @${post.authorHandle}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Post by ${post.authorName}`,
+          text: shareText,
+          url: shareUrl,
+        });
+        onNotify?.("success", "Post shared successfully!");
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      onNotify?.("success", "Link copied to clipboard!");
+    } catch {
+      onNotify?.("info", `Post URL: ${shareUrl}`);
+    }
   }
 
   return (
-    <article className="post-card card">
+    <article className="post-card card" id={`post-${post._id}`}>
       <div className="post-header">
         <div className="post-author">
           <Avatar
@@ -343,6 +367,16 @@ function PostCard({
               ? "Saved"
               : "Save"}
           </span>
+        </button>
+
+        <button
+          type="button"
+          className="action-link"
+          onClick={handleShare}
+          title="Share post"
+        >
+          <Share2 size={18} />
+          <span>Share</span>
         </button>
 
         <div className="action-link static">
