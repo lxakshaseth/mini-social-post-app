@@ -2,6 +2,7 @@ const express = require("express");
 const { isDatabaseReady } = require("../config/db");
 const requireDatabase = require("../middleware/requireDatabase");
 const Post = require("../models/Post");
+const User = require("../models/User");
 const auth = require("../middleware/auth");
 const upload = require("../utils/upload");
 
@@ -69,6 +70,59 @@ router.get("/", async (req, res) => {
     return res.json(posts);
   } catch (error) {
     return res.status(500).json({ message: "Unable to load posts." });
+  }
+});
+
+router.get("/saved", requireDatabase, auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate("savedPosts");
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    return res.json(user.savedPosts || []);
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to load saved posts." });
+  }
+});
+
+router.post("/:postId/bookmark", requireDatabase, auth, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    if (!Array.isArray(user.savedPosts)) {
+      user.savedPosts = [];
+    }
+
+    const existingIndex = user.savedPosts.findIndex(
+      (savedId) => savedId.toString() === req.params.postId
+    );
+
+    let isBookmarked = false;
+    if (existingIndex >= 0) {
+      user.savedPosts.splice(existingIndex, 1);
+      isBookmarked = false;
+    } else {
+      user.savedPosts.unshift(post._id);
+      isBookmarked = true;
+    }
+
+    await user.save();
+
+    return res.json({
+      isBookmarked,
+      savedPosts: user.savedPosts,
+      message: isBookmarked ? "Post saved to bookmarks." : "Post removed from bookmarks.",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to update bookmark." });
   }
 });
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Sparkles, Trash2, X } from "lucide-react";
+import { Bookmark, Check, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Sparkles, Trash2, X } from "lucide-react";
 import { getImageUrl } from "../api";
 import { colorFromText, engagementScore, formatDate, relativeTime } from "../utils";
 import Avatar from "./Avatar";
@@ -9,6 +9,7 @@ function PostCard({
   commentDrafts,
   currentUser,
   expandedPostId,
+  onBookmark,
   onCommentChange,
   onCommentSubmit,
   onDeleteComment,
@@ -314,6 +315,28 @@ function PostCard({
         >
           <MessageSquare size={18} />
           <span>{post.comments.length}</span>
+        </button>
+
+        <button
+          type="button"
+          className={`action-link ${
+            currentUser?.savedPosts?.some(
+              (id) => String(id) === String(post._id) || String(id?._id) === String(post._id)
+            )
+              ? "active"
+              : ""
+          }`}
+          onClick={() => onBookmark && onBookmark(post._id)}
+          title="Save to bookmarks"
+        >
+          <Bookmark size={18} />
+          <span>
+            {currentUser?.savedPosts?.some(
+              (id) => String(id) === String(post._id) || String(id?._id) === String(post._id)
+            )
+              ? "Saved"
+              : "Save"}
+          </span>
         </button>
 
         <div className="action-link static">

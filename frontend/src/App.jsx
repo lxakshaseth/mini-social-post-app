@@ -15,6 +15,7 @@ import {
   fetchPosts,
   loginUser,
   signupUser,
+  toggleBookmarkPost,
   toggleLikeComment,
   toggleLikeOnPost,
   updatePost,
@@ -436,6 +437,31 @@ function App() {
     }
   }
 
+  async function handleBookmark(postId) {
+    if (!requireAuth("Log in to bookmark posts.")) {
+      return;
+    }
+
+    try {
+      const result = await toggleBookmarkPost(postId, token);
+      setCurrentUser((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          savedPosts: result.savedPosts || [],
+        };
+        localStorage.setItem("taskplanet-user", JSON.stringify(updated));
+        return updated;
+      });
+      setFlash({
+        type: "success",
+        text: result.message || (result.isBookmarked ? "Post saved." : "Post removed from saved."),
+      });
+    } catch (error) {
+      setFlash({ type: "error", text: error.message });
+    }
+  }
+
   function handleNavClick(label) {
     setActiveNav(label);
     setMenuOpen(false);
@@ -447,8 +473,16 @@ function App() {
     }
 
     if (label === "Social") {
+      setFeedFilter("all");
       scrollToSection(feedRef);
       setFlash({ type: "info", text: "Social feed opened. You can create and browse posts here." });
+      return;
+    }
+
+    if (label === "Bookmarks") {
+      setFeedFilter("saved");
+      scrollToSection(feedRef);
+      setFlash({ type: "info", text: "Bookmarks opened. Showing all your saved posts." });
       return;
     }
 
@@ -665,7 +699,12 @@ function App() {
     );
   }
 
-  if (feedFilter === "for-you") {
+  if (feedFilter === "saved") {
+    const savedIds = new Set(
+      (currentUser?.savedPosts || []).map((p) => (p._id ? String(p._id) : String(p)))
+    );
+    visiblePosts = visiblePosts.filter((post) => savedIds.has(String(post._id)));
+  } else if (feedFilter === "for-you") {
     const sortedForYou = [...visiblePosts].sort(
       (left, right) =>
         engagementScore(right) - engagementScore(left) ||
@@ -774,6 +813,7 @@ function App() {
               feedFilter={feedFilter}
               loadingPosts={loadingPosts}
               maxPostLength={MAX_POST_LENGTH}
+              onBookmark={handleBookmark}
               onCommentChange={(postId, value) =>
                 setCommentDrafts((current) => ({ ...current, [postId]: value }))
               }

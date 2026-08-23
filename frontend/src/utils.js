@@ -3,11 +3,13 @@ const avatarPalette = ["#1b84ff", "#ff8a00", "#00a389", "#ef476f", "#6a4c93", "#
 export const navigationItems = [
   { label: "Home", detail: "Community pulse" },
   { label: "Social", detail: "Live feed", active: true },
+  { label: "Bookmarks", detail: "Saved posts" },
   { label: "Discover", detail: "Trending creators" },
 ];
 
 export const feedFilters = [
   { id: "all", label: "All Posts" },
+  { id: "saved", label: "Saved" },
   { id: "for-you", label: "For You" },
   { id: "most-liked", label: "Most Liked" },
   { id: "most-commented", label: "Most Commented" },
