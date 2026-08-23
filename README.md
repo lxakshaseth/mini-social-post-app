@@ -181,10 +181,22 @@ npm test
 
 ---
 
+## ❓ Troubleshooting & FAQs
+
+#### Q: Getting `MongoDB unavailable` error on startup?
+- Ensure your `MONGO_URI` in `backend/.env` is valid and your IP address is whitelisted in MongoDB Atlas Network Access (`0.0.0.0/0` for development).
+
+#### Q: How to trigger keyboard shortcuts?
+- Press `?` anywhere in the app to view the interactive shortcut cheat sheet.
+- Press `/` to focus the search bar, `C` or `N` to focus the composer, and `J`/`K` to jump across posts.
+
+#### Q: Does the app work offline or with slow networks?
+- Yes! The frontend client features request timeouts, draft persistence in localStorage, and optimistic updates for zero UI latency.
+
+---
+
 ## 👨‍💻 Author
 - **GitHub**: [@lxakshaseth](https://github.com/lxakshaseth)
+- **Repository**: [mini-social-post-app](https://github.com/lxakshaseth/mini-social-post-app)
+- **Target Branch**: `akshat`
 
-
-- Frontend and backend are in separate folders as requested.
-- The frontend production build was verified successfully.
-- The backend booted successfully and connected to MongoDB with the provided values.
