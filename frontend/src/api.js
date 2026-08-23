@@ -83,6 +83,23 @@ export function toggleLikeOnPost(postId, token) {
   });
 }
 
+export function toggleBookmarkPost(postId, token) {
+  return apiRequest(`/posts/${postId}/bookmark`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function fetchSavedPosts(token) {
+  return apiRequest("/posts/saved", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export function addComment(postId, text, token) {
   return apiRequest(`/posts/${postId}/comments`, {
     method: "POST",

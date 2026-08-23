@@ -14,6 +14,7 @@ function FeedColumn({
   feedFilter,
   loadingPosts,
   maxPostLength,
+  onBookmark,
   onCommentChange,
   onCommentSubmit,
   onComposerFilterChange,
@@ -179,6 +180,7 @@ function FeedColumn({
             commentDrafts={commentDrafts}
             currentUser={currentUser}
             expandedPostId={expandedPostId}
+            onBookmark={onBookmark}
             onCommentChange={onCommentChange}
             onCommentSubmit={onCommentSubmit}
             onDeleteComment={onDeleteComment}

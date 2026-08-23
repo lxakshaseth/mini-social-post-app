@@ -56,6 +56,10 @@ function serializeUser(user) {
     email: user.email,
     handle: user.handle,
     avatarColor: user.avatarColor,
+    bio: user.bio || "",
+    location: user.location || "",
+    website: user.website || "",
+    savedPosts: user.savedPosts || [],
     createdAt: user.createdAt,
   };
 }
