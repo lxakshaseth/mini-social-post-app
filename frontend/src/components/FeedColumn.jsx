@@ -19,6 +19,8 @@ function FeedColumn({
   onComposerFilterChange,
   onClearComposer,
   onCreatePost,
+  onDeletePost,
+  onEditPost,
   onFeedFilterChange,
   onImageChange,
   onLike,
@@ -177,6 +179,8 @@ function FeedColumn({
             expandedPostId={expandedPostId}
             onCommentChange={onCommentChange}
             onCommentSubmit={onCommentSubmit}
+            onDeletePost={onDeletePost}
+            onEditPost={onEditPost}
             onLike={onLike}
             onToggleComments={onToggleComments}
             post={post}

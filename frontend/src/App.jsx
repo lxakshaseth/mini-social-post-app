@@ -9,11 +9,13 @@ import RightRail from "./components/RightRail";
 import {
   addComment,
   createPost,
+  deletePost,
   fetchCurrentUser,
   fetchPosts,
   loginUser,
   signupUser,
   toggleLikeOnPost,
+  updatePost,
 } from "./api";
 import {
   engagementScore,
@@ -356,6 +358,44 @@ function App() {
       setPosts((current) => current.map((post) => (post._id === updatedPost._id ? updatedPost : post)));
       setExpandedPostId(postId);
       setCommentDrafts((current) => ({ ...current, [postId]: "" }));
+    } catch (error) {
+      setFlash({ type: "error", text: error.message });
+    } finally {
+      setBusyPostId("");
+    }
+  }
+
+  async function handleDeletePost(postId) {
+    if (!requireAuth("Log in to delete your post.")) {
+      return;
+    }
+
+    setBusyPostId(postId);
+
+    try {
+      await deletePost(postId, token);
+      setPosts((current) => current.filter((post) => post._id !== postId));
+      setFlash({ type: "success", text: "Post removed successfully." });
+    } catch (error) {
+      setFlash({ type: "error", text: error.message });
+    } finally {
+      setBusyPostId("");
+    }
+  }
+
+  async function handleEditPost(postId, updatedText) {
+    if (!requireAuth("Log in to edit your post.")) {
+      return;
+    }
+
+    setBusyPostId(postId);
+
+    try {
+      const updatedPost = await updatePost(postId, updatedText, token);
+      setPosts((current) =>
+        current.map((post) => (post._id === updatedPost._id ? updatedPost : post))
+      );
+      setFlash({ type: "success", text: "Post updated successfully." });
     } catch (error) {
       setFlash({ type: "error", text: error.message });
     } finally {
@@ -708,6 +748,8 @@ function App() {
               onComposerFilterChange={setComposerFilter}
               onClearComposer={resetComposer}
               onCreatePost={handleCreatePost}
+              onDeletePost={handleDeletePost}
+              onEditPost={handleEditPost}
               onFeedFilterChange={setFeedFilter}
               onImageChange={handleImageChange}
               onLike={handleLike}

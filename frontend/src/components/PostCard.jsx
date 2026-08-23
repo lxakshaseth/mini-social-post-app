@@ -1,4 +1,5 @@
-import { Heart, MessageSquare, Send, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Check, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Sparkles, Trash2, X } from "lucide-react";
 import { getImageUrl } from "../api";
 import { colorFromText, engagementScore, formatDate, relativeTime } from "../utils";
 import Avatar from "./Avatar";
@@ -10,14 +11,41 @@ function PostCard({
   expandedPostId,
   onCommentChange,
   onCommentSubmit,
+  onDeletePost,
+  onEditPost,
   onLike,
   onToggleComments,
   post,
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(post.text || "");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const isAuthor =
+    currentUser &&
+    (String(post.author) === String(currentUser._id) ||
+      post.authorHandle === currentUser.handle);
+
   const isLikedByCurrentUser = post.likes.some(
     (like) => String(like.userId) === String(currentUser?._id)
   );
   const isExpanded = expandedPostId === post._id;
+
+  function handleSaveEdit() {
+    if (!editText.trim() && !post.imageUrl) {
+      return;
+    }
+    if (onEditPost) {
+      onEditPost(post._id, editText.trim());
+    }
+    setIsEditing(false);
+  }
+
+  function handleCancelEdit() {
+    setEditText(post.text || "");
+    setIsEditing(false);
+  }
 
   return (
     <article className="post-card card">
@@ -36,12 +64,213 @@ function PostCard({
           </div>
         </div>
 
-        <div className="post-meta">
+        <div className="post-meta" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span>{relativeTime(post.createdAt)}</span>
+          {isAuthor && (
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                className="icon-btn"
+                title="Post options"
+                onClick={() => setMenuOpen((o) => !o)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px",
+                  borderRadius: "6px",
+                  display: "flex",
+                  color: "inherit",
+                }}
+              >
+                <MoreHorizontal size={18} />
+              </button>
+
+              {menuOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "100%",
+                    zIndex: 20,
+                    background: "var(--card-bg, #fff)",
+                    border: "1px solid var(--border-color, #e2e8f0)",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    padding: "4px",
+                    minWidth: "120px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(true);
+                      setMenuOpen(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      width: "100%",
+                      padding: "8px 12px",
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      textAlign: "left",
+                      color: "inherit",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <Edit3 size={14} />
+                    <span>Edit Post</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteConfirm(true);
+                      setMenuOpen(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      width: "100%",
+                      padding: "8px 12px",
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      color: "#ef4444",
+                      textAlign: "left",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {post.text ? <p className="post-copy">{post.text}</p> : null}
+      {showDeleteConfirm && (
+        <div
+          style={{
+            background: "rgba(239, 68, 68, 0.08)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            borderRadius: "8px",
+            padding: "12px",
+            margin: "8px 0",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ fontSize: "13px", fontWeight: 500 }}>
+            Delete this post permanently?
+          </span>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={() => onDeletePost && onDeletePost(post._id)}
+              disabled={busyPostId === post._id}
+              style={{
+                background: "#ef4444",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                padding: "6px 12px",
+                fontSize: "12px",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              {busyPostId === post._id ? "Deleting..." : "Yes, Delete"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(false)}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border-color, #ccc)",
+                borderRadius: "6px",
+                padding: "6px 12px",
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isEditing ? (
+        <div style={{ margin: "10px 0" }}>
+          <textarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            rows={3}
+            style={{
+              width: "100%",
+              padding: "10px",
+              borderRadius: "8px",
+              border: "1px solid var(--border-color, #ccc)",
+              background: "var(--input-bg, transparent)",
+              color: "inherit",
+              fontFamily: "inherit",
+              fontSize: "14px",
+              resize: "vertical",
+            }}
+          />
+          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "6px" }}>
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "6px",
+                border: "1px solid var(--border-color, #ccc)",
+                background: "transparent",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "13px",
+              }}
+            >
+              <X size={14} />
+              <span>Cancel</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveEdit}
+              disabled={busyPostId === post._id}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "6px",
+                border: "none",
+                background: "var(--primary, #3b82f6)",
+                color: "#fff",
+                cursor: "pointer",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "13px",
+              }}
+            >
+              <Check size={14} />
+              <span>Save</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        post.text ? <p className="post-copy">{post.text}</p> : null
+      )}
 
       {post.imageUrl ? (
         <div className="post-image-shell">
