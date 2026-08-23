@@ -1870,3 +1870,41 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.action-link:hover {
+  transform: translateY(-1px);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.action-link:active {
+  transform: scale(0.95);
+}
+
+.primary-action:hover {
+  filter: brightness(1.05);
+}
+
+.primary-action:active {
+  transform: scale(0.98);
+}
+
