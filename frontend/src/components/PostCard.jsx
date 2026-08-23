@@ -11,9 +11,11 @@ function PostCard({
   expandedPostId,
   onCommentChange,
   onCommentSubmit,
+  onDeleteComment,
   onDeletePost,
   onEditPost,
   onLike,
+  onLikeComment,
   onToggleComments,
   post,
 }) {
@@ -323,23 +325,74 @@ function PostCard({
       <div className={`comment-zone ${isExpanded || post.comments.length ? "open" : ""}`}>
         <div className="comment-list">
           {post.comments.length ? (
-            post.comments.map((comment) => (
-              <div key={comment._id} className="comment-item">
-                <Avatar
-                  name={comment.username}
-                  color={colorFromText(comment.handle || comment.username)}
-                  size="xs"
-                />
-                <div>
-                  <div className="comment-header">
-                    <strong>{comment.username}</strong>
-                    <span>@{comment.handle}</span>
-                    <small>{relativeTime(comment.createdAt)}</small>
+            post.comments.map((comment) => {
+              const commentLikes = Array.isArray(comment.likes) ? comment.likes : [];
+              const isCommentLiked = commentLikes.some(
+                (l) => String(l.userId) === String(currentUser?._id)
+              );
+              const canDeleteComment =
+                currentUser &&
+                (String(comment.userId) === String(currentUser._id) || isAuthor);
+
+              return (
+                <div key={comment._id} className="comment-item" style={{ position: "relative" }}>
+                  <Avatar
+                    name={comment.username}
+                    color={colorFromText(comment.handle || comment.username)}
+                    size="xs"
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div className="comment-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <strong>{comment.username}</strong>
+                        <span>@{comment.handle}</span>
+                        <small>{relativeTime(comment.createdAt)}</small>
+                      </div>
+                      {canDeleteComment && (
+                        <button
+                          type="button"
+                          title="Delete comment"
+                          onClick={() => onDeleteComment && onDeleteComment(post._id, comment._id)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "2px 4px",
+                            color: "#ef4444",
+                            opacity: 0.7,
+                            display: "flex",
+                          }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                    <p style={{ margin: "4px 0" }}>{comment.text}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+                      <button
+                        type="button"
+                        onClick={() => onLikeComment && onLikeComment(post._id, comment._id)}
+                        style={{
+                          background: isCommentLiked ? "rgba(239, 68, 68, 0.1)" : "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          fontSize: "11px",
+                          color: isCommentLiked ? "#ef4444" : "var(--muted, #64748b)",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        <Heart size={12} fill={isCommentLiked ? "#ef4444" : "none"} />
+                        <span>{commentLikes.length > 0 ? commentLikes.length : "Like"}</span>
+                      </button>
+                    </div>
                   </div>
-                  <p>{comment.text}</p>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="comment-placeholder">No comments yet. Start the conversation.</div>
           )}
