@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, Check, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Share2, Sparkles, Trash2, X } from "lucide-react";
+import { Bookmark, Check, Copy, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Share2, Sparkles, Trash2, X } from "lucide-react";
 import { getImageUrl } from "../api";
 import { colorFromText, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
 import Avatar from "./Avatar";
@@ -128,9 +128,36 @@ function PostCard({
                     borderRadius: "8px",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                     padding: "4px",
-                    minWidth: "120px",
+                    minWidth: "130px",
                   }}
                 >
+                  {post.text && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(post.text);
+                        onNotify?.("success", "Post text copied to clipboard!");
+                        setMenuOpen(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        width: "100%",
+                        padding: "8px 12px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        textAlign: "left",
+                        color: "inherit",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <Copy size={14} />
+                      <span>Copy text</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
