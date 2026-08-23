@@ -1,4 +1,5 @@
-import { ImagePlus, Send, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { ImagePlus, Send, Sparkles, UploadCloud } from "lucide-react";
 import { feedFilters } from "../utils";
 import Avatar from "./Avatar";
 import FeedInsights from "./FeedInsights";
@@ -25,6 +26,7 @@ function FeedColumn({
   onEditPost,
   onFeedFilterChange,
   onImageChange,
+  onImageClick,
   onLike,
   onLikeComment,
   onPostTextChange,
@@ -36,12 +38,45 @@ function FeedColumn({
   trendingTopics,
   visiblePosts,
 }) {
+  const [isDragging, setIsDragging] = useState(false);
   const postCharacterCount = postForm.text.length;
   const isPostDisabled = postLoading || (!postForm.text.trim() && !postForm.image);
 
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      onImageChange({ target: { files: [file] } });
+    }
+  }
+
   return (
     <section className="feed-column">
-      <section className="composer card">
+      <section
+        className={`composer card ${isDragging ? "drag-active" : ""}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        style={{
+          border: isDragging ? "2px dashed var(--primary, #3b82f6)" : undefined,
+          transition: "border 0.2s ease, background 0.2s ease",
+          background: isDragging ? "rgba(59, 130, 246, 0.05)" : undefined,
+        }}
+      >
         <div className="section-header">
           <div>
             <h2>Create Post</h2>
@@ -186,6 +221,7 @@ function FeedColumn({
             onDeleteComment={onDeleteComment}
             onDeletePost={onDeletePost}
             onEditPost={onEditPost}
+            onImageClick={onImageClick}
             onLike={onLike}
             onLikeComment={onLikeComment}
             onToggleComments={onToggleComments}

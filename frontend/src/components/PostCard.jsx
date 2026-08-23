@@ -15,6 +15,7 @@ function PostCard({
   onDeleteComment,
   onDeletePost,
   onEditPost,
+  onImageClick,
   onLike,
   onLikeComment,
   onToggleComments,
@@ -276,7 +277,12 @@ function PostCard({
       )}
 
       {post.imageUrl ? (
-        <div className="post-image-shell">
+        <div
+          className="post-image-shell"
+          onClick={() => onImageClick && onImageClick(getImageUrl(post.imageUrl))}
+          style={{ cursor: "zoom-in" }}
+          title="Click to view full image"
+        >
           <img src={getImageUrl(post.imageUrl)} alt="Post attachment" />
         </div>
       ) : null}
