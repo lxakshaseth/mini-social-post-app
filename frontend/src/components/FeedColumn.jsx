@@ -125,13 +125,49 @@ function FeedColumn({
           placeholder="What's on your mind?"
         />
 
-        <div className="composer-meta-row">
-          <span className={`composer-status ${draftSaved ? "good" : ""}`}>
-            {draftSaved ? "Draft saved locally" : "Draft editing"}
-          </span>
-          <span className={`composer-status ${postCharacterCount > maxPostLength ? "warn" : ""}`}>
-            {postCharacterCount}/{maxPostLength}
-          </span>
+        <div className="composer-meta-row" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className={`composer-status ${draftSaved ? "good" : ""}`}>
+              {draftSaved ? "Draft saved locally" : "Draft editing"}
+            </span>
+            <span
+              className={`composer-status ${postCharacterCount > maxPostLength * 0.9 ? "warn" : ""}`}
+              style={{
+                color:
+                  postCharacterCount > maxPostLength
+                    ? "#ef4444"
+                    : postCharacterCount > maxPostLength * 0.8
+                    ? "#f59e0b"
+                    : undefined,
+                fontWeight: 600,
+              }}
+            >
+              {postCharacterCount}/{maxPostLength}
+            </span>
+          </div>
+          <div
+            style={{
+              width: "100%",
+              height: "4px",
+              background: "var(--border-color, #e2e8f0)",
+              borderRadius: "2px",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${Math.min(100, (postCharacterCount / maxPostLength) * 100)}%`,
+                background:
+                  postCharacterCount > maxPostLength * 0.9
+                    ? "#ef4444"
+                    : postCharacterCount > maxPostLength * 0.7
+                    ? "#f59e0b"
+                    : "var(--primary, #3b82f6)",
+                transition: "width 0.2s ease, background 0.2s ease",
+              }}
+            />
+          </div>
         </div>
 
         {postForm.preview ? (
