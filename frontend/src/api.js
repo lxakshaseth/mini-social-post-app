@@ -93,6 +93,25 @@ export function addComment(postId, text, token) {
   });
 }
 
+export function updatePost(postId, text, token) {
+  return apiRequest(`/posts/${postId}`, {
+    method: "PUT",
+    body: JSON.stringify({ text }),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function deletePost(postId, token) {
+  return apiRequest(`/posts/${postId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export function fetchSupportBrief(payload) {
   return apiRequest("/assistant/support-brief", {
     method: "POST",
