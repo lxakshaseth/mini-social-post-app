@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
 import ActionModal from "./components/ActionModal";
 import FeatureDrawer from "./components/FeatureDrawer";
 import LeftRail from "./components/LeftRail";
@@ -58,7 +58,6 @@ function App() {
   const [actionModal, setActionModal] = useState(null);
   const [featureDrawer, setFeatureDrawer] = useState(null);
   const [lightboxImage, setLightboxImage] = useState("");
-  const [flash, setFlash] = useState(null);
   const [draftSaved, setDraftSaved] = useState(Boolean(localStorage.getItem(POST_DRAFT_KEY)));
   const [authLoading, setAuthLoading] = useState(false);
   const [postLoading, setPostLoading] = useState(false);
@@ -205,9 +204,23 @@ function App() {
     setFeatureDrawer({ view, ...payload });
   }
 
+  const [toasts, setToasts] = useState([]);
+
   const showNotice = useCallback((type, text) => {
-    setFlash({ type, text });
+    if (!text) return;
+    const id = Date.now() + Math.random();
+    const newToast = { id, type: type || "info", text };
+    setToasts((current) => [...current.slice(-4), newToast]);
+    setTimeout(() => {
+      setToasts((current) => current.filter((t) => t.id !== id));
+    }, 4000);
   }, []);
+
+  const setFlash = useCallback((flashObj) => {
+    if (flashObj?.text) {
+      showNotice(flashObj.type, flashObj.text);
+    }
+  }, [showNotice]);
 
   function requireAuth(message) {
     if (token) {
@@ -215,7 +228,7 @@ function App() {
     }
 
     setAuthMode("login");
-    setFlash({ type: "info", text: message });
+    showNotice("info", message);
     return false;
   }
 
@@ -794,14 +807,62 @@ function App() {
           ownPostsCount={ownPosts.length}
         />
 
-        {flash ? (
-          <div className={`notice notice-${flash.type || "info"}`}>
-            <span>{flash.text}</span>
-            <button type="button" onClick={() => setFlash(null)}>
-              <X size={16} />
-            </button>
+        {toasts.length > 0 && (
+          <div
+            className="toast-container"
+            style={{
+              position: "fixed",
+              top: "20px",
+              right: "20px",
+              zIndex: 9999,
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              maxWidth: "380px",
+              width: "100%",
+              pointerEvents: "none",
+            }}
+          >
+            {toasts.map((toast) => (
+              <div
+                key={toast.id}
+                className={`notice notice-${toast.type || "info"}`}
+                style={{
+                  pointerEvents: "auto",
+                  margin: 0,
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "12px 16px",
+                  animation: "slideInRight 0.25s ease-out",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  {toast.type === "success" && <CheckCircle2 size={18} color="#10b981" />}
+                  {toast.type === "error" && <AlertCircle size={18} color="#ef4444" />}
+                  {toast.type === "info" && <Info size={18} color="#3b82f6" />}
+                  <span style={{ fontSize: "13px", fontWeight: 500 }}>{toast.text}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setToasts((cur) => cur.filter((t) => t.id !== toast.id))}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "4px",
+                    display: "flex",
+                    opacity: 0.7,
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
           </div>
-        ) : null}
+        )}
 
         <section ref={heroRef} className="hero-banner card">
           <div className="hero-copy">
@@ -863,6 +924,7 @@ function App() {
               onImageClick={(url) => setLightboxImage(url)}
               onLike={handleLike}
               onLikeComment={handleLikeComment}
+              onNotify={showNotice}
               onPostTextChange={handlePostTextChange}
               onRemoveImage={removeSelectedImage}
               onToggleComments={setExpandedPostId}

@@ -29,6 +29,7 @@ function FeedColumn({
   onImageClick,
   onLike,
   onLikeComment,
+  onNotify,
   onPostTextChange,
   onRemoveImage,
   onToggleComments,
@@ -224,6 +225,7 @@ function FeedColumn({
             onImageClick={onImageClick}
             onLike={onLike}
             onLikeComment={onLikeComment}
+            onNotify={onNotify}
             onToggleComments={onToggleComments}
             post={post}
           />
