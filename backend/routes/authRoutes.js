@@ -139,4 +139,34 @@ router.get("/me", auth, (req, res) => {
   return res.json({ user: serializeUser(req.user) });
 });
 
+router.put("/profile", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    if (req.body.name && typeof req.body.name === "string") {
+      user.name = req.body.name.trim().slice(0, 60);
+    }
+    if (req.body.bio !== undefined && typeof req.body.bio === "string") {
+      user.bio = req.body.bio.trim().slice(0, 160);
+    }
+    if (req.body.location !== undefined && typeof req.body.location === "string") {
+      user.location = req.body.location.trim().slice(0, 60);
+    }
+    if (req.body.website !== undefined && typeof req.body.website === "string") {
+      user.website = req.body.website.trim().slice(0, 100);
+    }
+    if (req.body.avatarColor && typeof req.body.avatarColor === "string") {
+      user.avatarColor = req.body.avatarColor.trim();
+    }
+
+    await user.save();
+    return res.json({ user: serializeUser(user), message: "Profile updated successfully." });
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to update profile." });
+  }
+});
+
 module.exports = router;

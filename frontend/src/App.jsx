@@ -19,6 +19,7 @@ import {
   toggleLikeComment,
   toggleLikeOnPost,
   updatePost,
+  updateUserProfile,
 } from "./api";
 import {
   engagementScore,
@@ -462,6 +463,28 @@ function App() {
     }
   }
 
+  async function handleUpdateProfile(profileData) {
+    if (!token) return;
+    const response = await updateUserProfile(profileData, token);
+    if (response?.user) {
+      setCurrentUser(response.user);
+      localStorage.setItem("taskplanet-user", JSON.stringify(response.user));
+      // update user in posts if any
+      setPosts((current) =>
+        current.map((p) =>
+          String(p.author) === String(response.user._id)
+            ? {
+                ...p,
+                authorName: response.user.name,
+                authorAvatarColor: response.user.avatarColor,
+              }
+            : p
+        )
+      );
+    }
+    return response;
+  }
+
   function handleNavClick(label) {
     setActiveNav(label);
     setMenuOpen(false);
@@ -886,6 +909,7 @@ function App() {
         totalComments={totalComments}
         unreadNotificationsCount={unreadNotificationsCount}
         walletValue={walletValue}
+        onUpdateProfile={handleUpdateProfile}
       />
     </div>
   );
