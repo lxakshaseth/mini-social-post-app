@@ -228,6 +228,7 @@ function FeedColumn({
             onNotify={onNotify}
             onToggleComments={onToggleComments}
             post={post}
+            searchTerm={searchTerm}
           />
         ))}
       </div>

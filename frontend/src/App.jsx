@@ -151,12 +151,63 @@ function App() {
         setMenuOpen(false);
         setActionModal(null);
         setFeatureDrawer(null);
+        setLightboxImage("");
         return;
       }
 
-      if (event.key === "/" && !isTypingContext) {
+      if (isTypingContext) {
+        return;
+      }
+
+      if (event.key === "/") {
         event.preventDefault();
         searchInputRef.current?.focus();
+      } else if (event.key === "c" || event.key === "n" || event.key === "C" || event.key === "N") {
+        event.preventDefault();
+        const composerTextarea = document.querySelector(".composer-textarea");
+        if (composerTextarea) {
+          composerTextarea.scrollIntoView({ behavior: "smooth", block: "center" });
+          composerTextarea.focus();
+        }
+      } else if (event.key === "?") {
+        event.preventDefault();
+        setActionModal({
+          title: "Keyboard Shortcuts",
+          eyebrow: "Productivity",
+          summary: "Navigate and interact quickly with power shortcuts:",
+          points: [
+            "/ - Focus search bar immediately",
+            "C or N - Create new post (focus composer)",
+            "J / K - Navigate to next / previous post in feed",
+            "Esc - Close open dialogs, drawers, and lightboxes",
+            "? - Show this keyboard shortcut guide",
+          ],
+          actionLabel: "Got it",
+        });
+      } else if (event.key === "j" || event.key === "J") {
+        const postCards = document.querySelectorAll(".post-card");
+        if (postCards.length) {
+          const scrollPos = window.scrollY + 150;
+          for (let i = 0; i < postCards.length; i++) {
+            const top = postCards[i].offsetTop;
+            if (top > scrollPos) {
+              postCards[i].scrollIntoView({ behavior: "smooth", block: "start" });
+              break;
+            }
+          }
+        }
+      } else if (event.key === "k" || event.key === "K") {
+        const postCards = document.querySelectorAll(".post-card");
+        if (postCards.length) {
+          const scrollPos = window.scrollY - 50;
+          for (let i = postCards.length - 1; i >= 0; i--) {
+            const top = postCards[i].offsetTop;
+            if (top < scrollPos) {
+              postCards[i].scrollIntoView({ behavior: "smooth", block: "start" });
+              break;
+            }
+          }
+        }
       }
     }
 
