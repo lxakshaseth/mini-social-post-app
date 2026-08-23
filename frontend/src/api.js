@@ -64,6 +64,16 @@ export function fetchCurrentUser(token) {
   });
 }
 
+export function updateUserProfile(payload, token) {
+  return apiRequest("/auth/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export function createPost(body, token) {
   return apiRequest("/posts", {
     method: "POST",

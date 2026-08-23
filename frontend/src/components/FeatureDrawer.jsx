@@ -84,11 +84,44 @@ function FeatureDrawer({
   onOpenView,
   onSignOut,
   onNotify,
+  onUpdateProfile,
 }) {
   const [openFaqId, setOpenFaqId] = useState("post");
   const [feedbackRating, setFeedbackRating] = useState(4);
   const [feedbackCategory, setFeedbackCategory] = useState("Product");
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: currentUser?.name || "",
+    bio: currentUser?.bio || "",
+    location: currentUser?.location || "",
+    website: currentUser?.website || "",
+    avatarColor: currentUser?.avatarColor || "#1b84ff",
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      setProfileForm({
+        name: currentUser.name || "",
+        bio: currentUser.bio || "",
+        location: currentUser.location || "",
+        website: currentUser.website || "",
+        avatarColor: currentUser.avatarColor || "#1b84ff",
+      });
+    }
+  }, [currentUser]);
+
+  const avatarColors = [
+    "#1b84ff",
+    "#ff7a18",
+    "#00a389",
+    "#ef476f",
+    "#6a4c93",
+    "#118ab2",
+    "#10b981",
+    "#8b5cf6",
+  ];
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [supportLoading, setSupportLoading] = useState(false);
@@ -352,6 +385,26 @@ function FeatureDrawer({
     onNotify?.("success", `Feedback sent for ${feedbackCategory.toLowerCase()} improvements.`);
   }
 
+  async function handleSaveProfile(e) {
+    if (e) e.preventDefault();
+    if (!profileForm.name.trim()) {
+      onNotify?.("error", "Name cannot be empty.");
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      if (onUpdateProfile) {
+        await onUpdateProfile(profileForm);
+      }
+      setIsEditingProfile(false);
+      onNotify?.("success", "Profile updated successfully!");
+    } catch (err) {
+      onNotify?.("error", err.message || "Failed to update profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   function renderBody() {
     if (drawerView === "profile") {
       return (
@@ -371,8 +424,183 @@ function FeatureDrawer({
               </div>
               <p>{currentUser ? `@${currentUser.handle}` : "Public browsing mode"}</p>
               <small>{currentUser?.email || "Create an account to unlock creator tools"}</small>
+              {currentUser?.bio && (
+                <p style={{ marginTop: "6px", fontSize: "13px", color: "var(--muted, #64748b)" }}>
+                  {currentUser.bio}
+                </p>
+              )}
+              {(currentUser?.location || currentUser?.website) && (
+                <div style={{ display: "flex", gap: "10px", marginTop: "4px", fontSize: "12px" }}>
+                  {currentUser.location && <span>📍 {currentUser.location}</span>}
+                  {currentUser.website && <span>🔗 {currentUser.website}</span>}
+                </div>
+              )}
             </div>
           </section>
+
+          {isEditingProfile ? (
+            <form
+              onSubmit={handleSaveProfile}
+              style={{
+                background: "var(--card-bg, #fff)",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                borderRadius: "12px",
+                padding: "16px",
+                margin: "16px 0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              <h3 style={{ fontSize: "15px", fontWeight: 600 }}>Edit Creator Profile</h3>
+
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: 500, display: "block", marginBottom: "4px" }}>
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
+                  maxLength={60}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--border-color, #cbd5e1)",
+                    fontSize: "14px",
+                    background: "var(--input-bg, transparent)",
+                    color: "inherit",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: 500, display: "block", marginBottom: "4px" }}>
+                  Bio ({160 - (profileForm.bio?.length || 0)} left)
+                </label>
+                <textarea
+                  value={profileForm.bio}
+                  onChange={(e) => setProfileForm((p) => ({ ...p, bio: e.target.value }))}
+                  maxLength={160}
+                  rows={2}
+                  placeholder="Tell the community about yourself..."
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--border-color, #cbd5e1)",
+                    fontSize: "13px",
+                    background: "var(--input-bg, transparent)",
+                    color: "inherit",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: 500, display: "block", marginBottom: "4px" }}>
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.location}
+                    onChange={(e) => setProfileForm((p) => ({ ...p, location: e.target.value }))}
+                    placeholder="City, Country"
+                    maxLength={60}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--border-color, #cbd5e1)",
+                      fontSize: "13px",
+                      background: "var(--input-bg, transparent)",
+                      color: "inherit",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: 500, display: "block", marginBottom: "4px" }}>
+                    Website / Link
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.website}
+                    onChange={(e) => setProfileForm((p) => ({ ...p, website: e.target.value }))}
+                    placeholder="https://..."
+                    maxLength={100}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--border-color, #cbd5e1)",
+                      fontSize: "13px",
+                      background: "var(--input-bg, transparent)",
+                      color: "inherit",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: 500, display: "block", marginBottom: "6px" }}>
+                  Avatar Color Theme
+                </label>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {avatarColors.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setProfileForm((p) => ({ ...p, avatarColor: color }))}
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "50%",
+                        background: color,
+                        border: profileForm.avatarColor === color ? "3px solid #000" : "2px solid transparent",
+                        cursor: "pointer",
+                        outline: profileForm.avatarColor === color ? "2px solid #fff" : "none",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfile(false)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--border-color, #ccc)",
+                    background: "transparent",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingProfile}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: "6px",
+                    border: "none",
+                    background: "var(--primary, #3b82f6)",
+                    color: "#fff",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    fontSize: "13px",
+                  }}
+                >
+                  {savingProfile ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          ) : null}
 
           <div className="drawer-stat-grid">
             <div>
@@ -399,9 +627,9 @@ function FeatureDrawer({
               <button
                 type="button"
                 className="drawer-inline-action"
-                onClick={() => onNotify?.("info", "Profile editor can be connected next.")}
+                onClick={() => setIsEditingProfile((p) => !p)}
               >
-                Edit profile
+                {isEditingProfile ? "Close Editor" : "Edit Profile"}
               </button>
             </div>
 
