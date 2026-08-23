@@ -49,6 +49,16 @@ function ProfileMenu({
           </div>
           <p>{currentUser ? `@${currentUser.handle}` : "Sign in to unlock all actions"}</p>
           <small>{currentUser?.email || "Public browsing mode enabled"}</small>
+          {currentUser?.bio && (
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--muted, #64748b)" }}>
+              {currentUser.bio}
+            </p>
+          )}
+          {currentUser?.createdAt && (
+            <div style={{ marginTop: "4px", fontSize: "11px", color: "var(--muted, #94a3b8)" }}>
+              Member since {new Date(currentUser.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })}
+            </div>
+          )}
         </div>
       </div>
 
