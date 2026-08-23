@@ -7,13 +7,65 @@ const upload = require("../utils/upload");
 
 const router = express.Router();
 
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   if (!isDatabaseReady()) {
+    if (req.query.paginated === "true" || req.query.page) {
+      return res.json({
+        posts: [],
+        pagination: { page: 1, limit: 10, totalPosts: 0, totalPages: 0, hasMore: false },
+      });
+    }
     return res.json([]);
   }
 
   try {
-    const posts = await Post.find().sort({ createdAt: -1 }).lean();
+    const isPaginated = req.query.paginated === "true" || Boolean(req.query.page);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (req.query.author) {
+      filter.author = req.query.author;
+    }
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search.trim(), "i");
+      filter.$or = [
+        { text: searchRegex },
+        { authorName: searchRegex },
+        { authorHandle: searchRegex },
+      ];
+    }
+
+    let sort = { createdAt: -1 };
+    if (req.query.sort === "most-liked") {
+      sort = { "likes.length": -1, createdAt: -1 };
+    }
+
+    if (isPaginated) {
+      const [totalPosts, posts] = await Promise.all([
+        Post.countDocuments(filter),
+        Post.find(filter)
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean({ virtuals: true }),
+      ]);
+
+      const totalPages = Math.ceil(totalPosts / limit);
+      return res.json({
+        posts,
+        pagination: {
+          page,
+          limit,
+          totalPosts,
+          totalPages,
+          hasMore: page < totalPages,
+        },
+      });
+    }
+
+    const posts = await Post.find(filter).sort(sort).lean();
     return res.json(posts);
   } catch (error) {
     return res.status(500).json({ message: "Unable to load posts." });

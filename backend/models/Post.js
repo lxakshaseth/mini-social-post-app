@@ -97,5 +97,11 @@ const postSchema = new mongoose.Schema(
   }
 );
 
+// Indexes for high performance querying, filtering, and sorting
+postSchema.index({ createdAt: -1 });
+postSchema.index({ author: 1, createdAt: -1 });
+postSchema.index({ "likes.userId": 1 });
+postSchema.index({ text: "text", authorName: "text", authorHandle: "text" });
+
 module.exports = mongoose.model("Post", postSchema);
 
