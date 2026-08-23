@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
+import { AlertCircle, ArrowUp, CheckCircle2, Info, X } from "lucide-react";
 import ActionModal from "./components/ActionModal";
 import FeatureDrawer from "./components/FeatureDrawer";
 import LeftRail from "./components/LeftRail";
@@ -58,6 +58,7 @@ function App() {
   const [actionModal, setActionModal] = useState(null);
   const [featureDrawer, setFeatureDrawer] = useState(null);
   const [lightboxImage, setLightboxImage] = useState("");
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [draftSaved, setDraftSaved] = useState(Boolean(localStorage.getItem(POST_DRAFT_KEY)));
   const [authLoading, setAuthLoading] = useState(false);
   const [postLoading, setPostLoading] = useState(false);
@@ -221,12 +222,22 @@ function App() {
       }
     }
 
+    function handleScroll() {
+      if (window.scrollY > 400) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    }
+
     window.addEventListener("keydown", handleGlobalKeyDown);
     window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener("keydown", handleGlobalKeyDown);
       window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, [menuOpen]);
 
@@ -1131,6 +1142,35 @@ function App() {
         walletValue={walletValue}
         onUpdateProfile={handleUpdateProfile}
       />
+
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          title="Back to Top"
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
+            zIndex: 90,
+            width: "44px",
+            height: "44px",
+            borderRadius: "50%",
+            background: "var(--primary, #3b82f6)",
+            color: "#fff",
+            border: "none",
+            boxShadow: "0 8px 20px rgba(59, 130, 246, 0.4)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "transform 0.2s ease, opacity 0.2s ease",
+            animation: "slideInRight 0.2s ease-out",
+          }}
+        >
+          <ArrowUp size={20} />
+        </button>
+      )}
     </div>
   );
 }
