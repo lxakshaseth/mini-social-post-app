@@ -184,6 +184,39 @@ function FeedColumn({
           </div>
         ) : null}
 
+        <div
+          className="composer-emoji-bar"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            margin: "8px 0 4px",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: "12px", color: "var(--muted, #64748b)", fontWeight: 500 }}>
+            Quick Reactions:
+          </span>
+          {["🔥", "🚀", "💡", "✨", "❤️", "👏", "🎉", "💯"].map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => onPostTextChange(postForm.text ? `${postForm.text} ${emoji}` : emoji)}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                borderRadius: "6px",
+                padding: "2px 6px",
+                fontSize: "14px",
+                cursor: "pointer",
+                lineHeight: 1,
+              }}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+
         <div className="composer-actions">
           <label className="action-pill upload-pill">
             <ImagePlus size={18} />
