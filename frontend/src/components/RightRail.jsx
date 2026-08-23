@@ -1,4 +1,5 @@
-import { LogOut } from "lucide-react";
+import { useState } from "react";
+import { Eye, EyeOff, LogOut } from "lucide-react";
 import Avatar from "./Avatar";
 
 function RightRail({
@@ -24,6 +25,7 @@ function RightRail({
   trendingTopics,
   posts,
 }) {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <aside className="right-rail">
       <section ref={activityPanelRef} className="activity-panel card">
@@ -173,14 +175,34 @@ function RightRail({
                 />
               </label>
 
-              <label>
+              <label style={{ position: "relative" }}>
                 Password
-                <input
-                  type="password"
-                  value={authForm.password}
-                  onChange={(event) => onAuthFormChange("password", event.target.value)}
-                  placeholder="At least 6 characters"
-                />
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={authForm.password}
+                    onChange={(event) => onAuthFormChange("password", event.target.value)}
+                    placeholder="At least 6 characters"
+                    style={{ width: "100%", paddingRight: "40px" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    title={showPassword ? "Hide password" : "Show password"}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      color: "var(--muted, #64748b)",
+                      padding: "4px",
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </label>
 
               <button type="submit" className="primary-action wide" disabled={authLoading}>
