@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bookmark, Check, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Share2, Sparkles, Trash2, X } from "lucide-react";
 import { getImageUrl } from "../api";
-import { colorFromText, engagementScore, formatDate, relativeTime } from "../utils";
+import { colorFromText, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
 import Avatar from "./Avatar";
 
 function PostCard({
@@ -21,6 +21,7 @@ function PostCard({
   onNotify,
   onToggleComments,
   post,
+  searchTerm,
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.text || "");
@@ -85,8 +86,8 @@ function PostCard({
           />
           <div>
             <div className="author-row">
-              <strong>{post.authorName}</strong>
-              <span>@{post.authorHandle}</span>
+              <strong>{highlightText(post.authorName, searchTerm)}</strong>
+              <span>@{highlightText(post.authorHandle, searchTerm)}</span>
             </div>
             <p>{formatDate(post.createdAt)}</p>
           </div>
@@ -297,7 +298,7 @@ function PostCard({
           </div>
         </div>
       ) : (
-        post.text ? <p className="post-copy">{post.text}</p> : null
+        post.text ? <p className="post-copy">{highlightText(post.text, searchTerm)}</p> : null
       )}
 
       {post.imageUrl ? (

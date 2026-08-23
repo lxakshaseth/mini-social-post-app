@@ -232,3 +232,31 @@ export function compressImage(file, maxWidth = 1400, quality = 0.85) {
     reader.onerror = () => resolve(file);
   });
 }
+
+import React from "react";
+
+export function highlightText(text, query) {
+  if (!text) return "";
+  if (!query || !query.trim()) return text;
+
+  const escapedQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escapedQuery})`, "gi"));
+
+  return parts.map((part, index) =>
+    part.toLowerCase() === query.trim().toLowerCase()
+      ? React.createElement(
+          "mark",
+          {
+            key: index,
+            style: {
+              backgroundColor: "#fde047",
+              color: "#0f172a",
+              padding: "0 2px",
+              borderRadius: "2px",
+            },
+          },
+          part
+        )
+      : part
+  );
+}
