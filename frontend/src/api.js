@@ -93,6 +93,24 @@ export function addComment(postId, text, token) {
   });
 }
 
+export function deleteComment(postId, commentId, token) {
+  return apiRequest(`/posts/${postId}/comments/${commentId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function toggleLikeComment(postId, commentId, token) {
+  return apiRequest(`/posts/${postId}/comments/${commentId}/like`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export function updatePost(postId, text, token) {
   return apiRequest(`/posts/${postId}`, {
     method: "PUT",

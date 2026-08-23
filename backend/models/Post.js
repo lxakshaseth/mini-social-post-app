@@ -48,6 +48,10 @@ const commentSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    likes: {
+      type: [likeSchema],
+      default: [],
+    },
   },
   { _id: true }
 );

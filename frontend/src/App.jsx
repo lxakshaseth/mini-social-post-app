@@ -9,11 +9,13 @@ import RightRail from "./components/RightRail";
 import {
   addComment,
   createPost,
+  deleteComment,
   deletePost,
   fetchCurrentUser,
   fetchPosts,
   loginUser,
   signupUser,
+  toggleLikeComment,
   toggleLikeOnPost,
   updatePost,
 } from "./api";
@@ -403,6 +405,37 @@ function App() {
     }
   }
 
+  async function handleDeleteComment(postId, commentId) {
+    if (!requireAuth("Log in to delete comments.")) {
+      return;
+    }
+
+    try {
+      const updatedPost = await deleteComment(postId, commentId, token);
+      setPosts((current) =>
+        current.map((post) => (post._id === updatedPost._id ? updatedPost : post))
+      );
+      setFlash({ type: "success", text: "Comment removed." });
+    } catch (error) {
+      setFlash({ type: "error", text: error.message });
+    }
+  }
+
+  async function handleLikeComment(postId, commentId) {
+    if (!requireAuth("Log in to like comments.")) {
+      return;
+    }
+
+    try {
+      const updatedPost = await toggleLikeComment(postId, commentId, token);
+      setPosts((current) =>
+        current.map((post) => (post._id === updatedPost._id ? updatedPost : post))
+      );
+    } catch (error) {
+      setFlash({ type: "error", text: error.message });
+    }
+  }
+
   function handleNavClick(label) {
     setActiveNav(label);
     setMenuOpen(false);
@@ -748,11 +781,13 @@ function App() {
               onComposerFilterChange={setComposerFilter}
               onClearComposer={resetComposer}
               onCreatePost={handleCreatePost}
+              onDeleteComment={handleDeleteComment}
               onDeletePost={handleDeletePost}
               onEditPost={handleEditPost}
               onFeedFilterChange={setFeedFilter}
               onImageChange={handleImageChange}
               onLike={handleLike}
+              onLikeComment={handleLikeComment}
               onPostTextChange={handlePostTextChange}
               onRemoveImage={removeSelectedImage}
               onToggleComments={setExpandedPostId}

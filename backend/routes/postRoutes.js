@@ -152,6 +152,74 @@ router.post("/:postId/comments", requireDatabase, auth, async (req, res) => {
   }
 });
 
+router.delete("/:postId/comments/:commentId", requireDatabase, auth, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found." });
+    }
+
+    // Only comment author or post author can delete
+    const isCommentAuthor = comment.userId.toString() === req.user._id.toString();
+    const isPostAuthor = post.author.toString() === req.user._id.toString();
+
+    if (!isCommentAuthor && !isPostAuthor) {
+      return res.status(403).json({ message: "You are not authorized to delete this comment." });
+    }
+
+    post.comments.pull(req.params.commentId);
+    await post.save();
+
+    return res.json(post);
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to delete comment." });
+  }
+});
+
+router.post("/:postId/comments/:commentId/like", requireDatabase, auth, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found." });
+    }
+
+    if (!Array.isArray(comment.likes)) {
+      comment.likes = [];
+    }
+
+    const existingLikeIndex = comment.likes.findIndex(
+      (like) => like.userId.toString() === req.user._id.toString()
+    );
+
+    if (existingLikeIndex >= 0) {
+      comment.likes.splice(existingLikeIndex, 1);
+    } else {
+      comment.likes.unshift({
+        userId: req.user._id,
+        username: req.user.name,
+        handle: req.user.handle,
+      });
+    }
+
+    await post.save();
+    return res.json(post);
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to like comment." });
+  }
+});
+
 router.put("/:postId", requireDatabase, auth, async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId);
