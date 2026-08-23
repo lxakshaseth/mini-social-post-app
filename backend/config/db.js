@@ -6,6 +6,7 @@ const DB_CONNECT_TIMEOUT_MS = Number(process.env.DB_CONNECT_TIMEOUT_MS || 5000);
 let reconnectTimer = null;
 let isConnecting = false;
 let lastErrorMessage = "";
+let connectionEstablishedAt = null;
 
 mongoose.set("bufferCommands", false);
 
@@ -24,12 +25,25 @@ function isDatabaseReady() {
   return mongoose.connection.readyState === 1;
 }
 
+async function pingDatabase() {
+  if (!isDatabaseReady()) return false;
+  try {
+    const adminDb = mongoose.connection.db.admin();
+    await adminDb.ping();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function getDatabaseStatus() {
   return {
     ready: isDatabaseReady(),
     state: getStateLabel(),
     retrying: Boolean(reconnectTimer) || isConnecting,
     error: lastErrorMessage || null,
+    connectedSince: connectionEstablishedAt,
+    uptimeSeconds: connectionEstablishedAt ? Math.round((Date.now() - connectionEstablishedAt) / 1000) : 0,
   };
 }
 
@@ -74,6 +88,7 @@ async function connectDB() {
     }
 
     lastErrorMessage = "";
+    connectionEstablishedAt = Date.now();
     console.log("MongoDB connected successfully.");
     return true;
   } catch (error) {
@@ -89,6 +104,7 @@ async function connectDB() {
 }
 
 mongoose.connection.on("disconnected", () => {
+  connectionEstablishedAt = null;
   if (process.env.MONGO_URI) {
     console.warn("MongoDB disconnected. Reconnecting in the background.");
     scheduleReconnect();
@@ -103,4 +119,5 @@ module.exports = {
   connectDB,
   getDatabaseStatus,
   isDatabaseReady,
+  pingDatabase,
 };
