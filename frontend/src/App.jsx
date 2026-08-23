@@ -22,6 +22,7 @@ import {
   updateUserProfile,
 } from "./api";
 import {
+  compressImage,
   engagementScore,
   extractTrendingTopics,
   formatDate,
@@ -56,6 +57,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionModal, setActionModal] = useState(null);
   const [featureDrawer, setFeatureDrawer] = useState(null);
+  const [lightboxImage, setLightboxImage] = useState("");
   const [flash, setFlash] = useState(null);
   const [draftSaved, setDraftSaved] = useState(Boolean(localStorage.getItem(POST_DRAFT_KEY)));
   const [authLoading, setAuthLoading] = useState(false);
@@ -235,7 +237,7 @@ function App() {
     setPostForm((current) => ({ ...current, image: null, preview: "" }));
   }
 
-  function handleImageChange(event) {
+  async function handleImageChange(event) {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -246,11 +248,20 @@ function App() {
       URL.revokeObjectURL(postForm.preview);
     }
 
-    setPostForm((current) => ({
-      ...current,
-      image: file,
-      preview: URL.createObjectURL(file),
-    }));
+    try {
+      const processedFile = await compressImage(file);
+      setPostForm((current) => ({
+        ...current,
+        image: processedFile,
+        preview: URL.createObjectURL(processedFile),
+      }));
+    } catch {
+      setPostForm((current) => ({
+        ...current,
+        image: file,
+        preview: URL.createObjectURL(file),
+      }));
+    }
   }
 
   function handlePostTextChange(value) {
@@ -849,6 +860,7 @@ function App() {
               onEditPost={handleEditPost}
               onFeedFilterChange={setFeedFilter}
               onImageChange={handleImageChange}
+              onImageClick={(url) => setLightboxImage(url)}
               onLike={handleLike}
               onLikeComment={handleLikeComment}
               onPostTextChange={handlePostTextChange}
@@ -893,6 +905,69 @@ function App() {
           />
         </div>
       </main>
+
+      {lightboxImage ? (
+        <div
+          className="modal-backdrop"
+          onClick={() => setLightboxImage("")}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "relative",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <img
+              src={lightboxImage}
+              alt="Full view"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "85vh",
+                borderRadius: "12px",
+                objectFit: "contain",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setLightboxImage("")}
+              style={{
+                position: "absolute",
+                top: "-15px",
+                right: "-15px",
+                background: "#1e293b",
+                color: "#fff",
+                border: "2px solid #fff",
+                borderRadius: "50%",
+                width: "36px",
+                height: "36px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <ActionModal modal={actionModal} onClose={() => setActionModal(null)} />
       <FeatureDrawer
