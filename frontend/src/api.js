@@ -9,21 +9,36 @@ async function apiRequest(endpoint, options = {}) {
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const timeoutMs = options.timeout || 15000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const data = await response.json().catch(() => ({}));
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      signal: options.signal || controller.signal,
+      headers,
+    });
 
-  if (!response.ok) {
-    const error = new Error(data.message || "Request failed.");
-    error.status = response.status;
-    error.data = data;
-    throw error;
+    clearTimeout(timeoutId);
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const error = new Error(data.message || `Request failed with status ${response.status}`);
+      error.status = response.status;
+      error.data = data;
+      throw error;
+    }
+
+    return data;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      throw new Error("Request timed out. Please check your internet connection.");
+    }
+    throw err;
   }
-
-  return data;
 }
 
 export function getImageUrl(imagePath) {
