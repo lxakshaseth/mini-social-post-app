@@ -21,6 +21,7 @@ import {
   toggleLikeOnPost,
   updatePost,
   updateUserProfile,
+  votePoll,
 } from "./api";
 import {
   compressImage,
@@ -376,13 +377,13 @@ function App() {
     }
   }
 
-  async function handleCreatePost() {
+  async function handleCreatePost(pollPayload) {
     if (!requireAuth("Sign in to create a post.")) {
       return;
     }
 
-    if (!postForm.text.trim() && !postForm.image) {
-      setFlash({ type: "error", text: "Add text or choose an image before posting." });
+    if (!postForm.text.trim() && !postForm.image && !pollPayload) {
+      setFlash({ type: "error", text: "Add text, choose an image, or create a poll before posting." });
       return;
     }
 
@@ -399,6 +400,10 @@ function App() {
         formData.append("image", postForm.image);
       }
 
+      if (pollPayload) {
+        formData.append("poll", JSON.stringify(pollPayload));
+      }
+
       const createdPost = await createPost(formData, token);
       setPosts((current) => [createdPost, ...current]);
       setComposerFilter("all");
@@ -409,6 +414,55 @@ function App() {
       setFlash({ type: "error", text: error.message });
     } finally {
       setPostLoading(false);
+    }
+  }
+
+  async function handleVotePoll(postId, optionIndex) {
+    if (!requireAuth("Sign in to vote in community polls.")) {
+      return;
+    }
+
+    // Optimistic poll vote update
+    setPosts((current) =>
+      current.map((post) => {
+        if (post._id !== postId || !post.poll || !post.poll.options) return post;
+        const userId = currentUser?._id;
+        const updatedOptions = post.poll.options.map((opt, idx) => {
+          const currentVotes = Array.isArray(opt.votes) ? opt.votes : [];
+          const hasVotedThis = currentVotes.some((id) => String(id) === String(userId));
+          if (idx === optionIndex) {
+            return {
+              ...opt,
+              votes: hasVotedThis
+                ? currentVotes.filter((id) => String(id) !== String(userId))
+                : [...currentVotes, userId],
+            };
+          } else {
+            return {
+              ...opt,
+              votes: currentVotes.filter((id) => String(id) !== String(userId)),
+            };
+          }
+        });
+
+        return {
+          ...post,
+          poll: {
+            ...post.poll,
+            options: updatedOptions,
+          },
+        };
+      })
+    );
+
+    try {
+      const updatedPost = await votePoll(postId, optionIndex, token);
+      setPosts((current) =>
+        current.map((post) => (post._id === postId ? updatedPost : post))
+      );
+    } catch (error) {
+      loadPosts();
+      setFlash({ type: "error", text: error.message });
     }
   }
 
@@ -1030,6 +1084,7 @@ function App() {
               onPostTextChange={handlePostTextChange}
               onRemoveImage={removeSelectedImage}
               onToggleComments={setExpandedPostId}
+              onVotePoll={handleVotePoll}
               postForm={postForm}
               postLoading={postLoading}
               searchTerm={searchTerm}

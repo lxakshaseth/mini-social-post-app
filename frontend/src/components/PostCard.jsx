@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, Check, Copy, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Share2, Sparkles, Trash2, X } from "lucide-react";
+import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
 import { getImageUrl } from "../api";
 import { colorFromText, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
 import Avatar from "./Avatar";
@@ -20,6 +20,7 @@ function PostCard({
   onLikeComment,
   onNotify,
   onToggleComments,
+  onVotePoll,
   post,
   searchTerm,
 }) {
@@ -364,6 +365,131 @@ function PostCard({
           <img src={getImageUrl(post.imageUrl)} alt="Post attachment" />
         </div>
       ) : null}
+
+      {post.poll && Array.isArray(post.poll.options) && post.poll.options.length > 0 && (
+        <div
+          className="post-poll-box"
+          style={{
+            margin: "12px 0",
+            padding: "14px",
+            borderRadius: "10px",
+            background: "var(--poll-bg, rgba(27, 132, 255, 0.04))",
+            border: "1px solid var(--border-color, #e2e8f0)",
+          }}
+        >
+          {post.poll.question && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px", fontWeight: 600 }}>
+              <Vote size={16} color="var(--primary, #1b84ff)" />
+              <span>{post.poll.question}</span>
+            </div>
+          )}
+
+          {(() => {
+            const totalVotes = post.poll.options.reduce(
+              (acc, opt) => acc + (Array.isArray(opt.votes) ? opt.votes.length : 0),
+              0
+            );
+            const userHasVoted = post.poll.options.some((opt) =>
+              opt.votes?.some((id) => String(id) === String(currentUser?._id))
+            );
+
+            return (
+              <div style={{ display: "grid", gap: "8px" }}>
+                {post.poll.options.map((opt, idx) => {
+                  const voteCount = Array.isArray(opt.votes) ? opt.votes.length : 0;
+                  const percent = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                  const isUserPick = opt.votes?.some(
+                    (id) => String(id) === String(currentUser?._id)
+                  );
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      disabled={busyPostId === post._id}
+                      onClick={() => onVotePoll && onVotePoll(post._id, idx)}
+                      style={{
+                        position: "relative",
+                        overflow: "hidden",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 14px",
+                        borderRadius: "8px",
+                        border: isUserPick
+                          ? "1.5px solid var(--primary, #1b84ff)"
+                          : "1px solid var(--border-color, #cbd5e1)",
+                        background: "var(--card-bg, #fff)",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: isUserPick ? 600 : 500,
+                        textAlign: "left",
+                        color: "inherit",
+                        transition: "border-color 0.2s ease, transform 0.1s ease",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: `${percent}%`,
+                          background: isUserPick
+                            ? "rgba(27, 132, 255, 0.2)"
+                            : "rgba(203, 213, 225, 0.25)",
+                          zIndex: 1,
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                      <span
+                        style={{
+                          position: "relative",
+                          zIndex: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        {isUserPick && <CheckCircle2 size={15} color="var(--primary, #1b84ff)" />}
+                        {opt.optionText}
+                      </span>
+                      <span
+                        style={{
+                          position: "relative",
+                          zIndex: 2,
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: "var(--muted, #64748b)",
+                        }}
+                      >
+                        {percent}% ({voteCount})
+                      </span>
+                    </button>
+                  );
+                })}
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "11px",
+                    color: "var(--muted, #64748b)",
+                    marginTop: "4px",
+                    padding: "0 2px",
+                  }}
+                >
+                  <span>
+                    {totalVotes} total vote{totalVotes === 1 ? "" : "s"}
+                    {userHasVoted ? " · Click your choice to change or remove" : " · Click option to vote"}
+                  </span>
+                  <span>Interactive Poll</span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {post.likes.length ? (
         <div className="identity-strip">
