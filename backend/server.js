@@ -7,6 +7,7 @@ const { connectDB, getDatabaseStatus } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const postRoutes = require("./routes/postRoutes");
 const assistantRoutes = require("./routes/assistantRoutes");
+const systemRoutes = require("./routes/systemRoutes");
 const sanitizeInput = require("./middleware/sanitize");
 
 const app = express();
@@ -33,6 +34,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/assistant", assistantRoutes);
+app.use("/api/system", systemRoutes);
 
 app.use((error, _req, res, _next) => {
   if (error?.code === "LIMIT_FILE_SIZE") {

@@ -185,3 +185,8 @@ export function requestSupportChat(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function fetchSystemDiagnostics() {
+  return apiRequest("/system/diagnostics");
+}
+
