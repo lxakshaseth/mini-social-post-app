@@ -178,6 +178,7 @@ function App() {
         setMenuOpen(false);
         setActionModal(null);
         setFeatureDrawer(null);
+        setSystemCheckOpen(false);
         setLightboxImage("");
         return;
       }
@@ -196,6 +197,12 @@ function App() {
           composerTextarea.scrollIntoView({ behavior: "smooth", block: "center" });
           composerTextarea.focus();
         }
+      } else if (event.key === "d" || event.key === "D") {
+        event.preventDefault();
+        setSystemCheckOpen((prev) => !prev);
+      } else if (event.key === "t" || event.key === "T") {
+        event.preventDefault();
+        handleThemeToggle();
       } else if (event.key === "?") {
         event.preventDefault();
         setActionModal({
@@ -205,6 +212,8 @@ function App() {
           points: [
             "/ - Focus search bar immediately",
             "C or N - Create new post (focus composer)",
+            "D - Open System Health & Diagnostics",
+            "T - Toggle Light / Night mode",
             "J / K - Navigate to next / previous post in feed",
             "Esc - Close open dialogs, drawers, and lightboxes",
             "? - Show this keyboard shortcut guide",
