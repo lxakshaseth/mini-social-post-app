@@ -1908,3 +1908,92 @@ button {
   transform: scale(0.98);
 }
 
+/* System Diagnostics Modal Styles */
+.system-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(27, 132, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.diag-card {
+  background: var(--bg-card-alt, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+body[data-theme="night"] .diag-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.diag-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin-bottom: 10px;
+  color: var(--text-color, #1e293b);
+}
+
+body[data-theme="night"] .diag-card-title {
+  color: #f1f5f9;
+}
+
+.diag-metrics {
+  display: grid;
+  gap: 8px;
+}
+
+.diag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-muted, #64748b);
+}
+
+body[data-theme="night"] .diag-row {
+  color: #94a3b8;
+}
+
+.diag-row code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+body[data-theme="night"] .diag-row code {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.system-check-btn {
+  color: #10b981;
+}
+
+.system-check-btn:hover {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #10b981 !important;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+

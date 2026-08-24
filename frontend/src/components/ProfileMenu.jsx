@@ -1,4 +1,5 @@
 import {
+  Activity,
   BadgeCheck,
   CircleHelp,
   Info,
@@ -17,6 +18,7 @@ const iconMap = {
   "My Profile": UserRound,
   "Activate Premium": Rocket,
   "Activate Premium Plus": Sparkles,
+  "System Diagnostics": Activity,
   "Help and Support": CircleHelp,
   "Chat with Us": MessageCircleMore,
   Feedback: MessageSquare,

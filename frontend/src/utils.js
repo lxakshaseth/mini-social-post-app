@@ -44,6 +44,11 @@ export const profileMenuItems = [
     section: "Support",
     items: [
       {
+        label: "System Diagnostics",
+        accent: true,
+        description: "Live health check of API, DB, memory & uptime.",
+      },
+      {
         label: "Help and Support",
         description: "Resolve account, posting, and notification issues.",
       },

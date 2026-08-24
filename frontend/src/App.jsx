@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowUp, CheckCircle2, Info, X } from "lucide-react";
 import ActionModal from "./components/ActionModal";
 import FeatureDrawer from "./components/FeatureDrawer";
+import SystemCheckModal from "./components/SystemCheckModal";
 import LeftRail from "./components/LeftRail";
 import TopBar from "./components/TopBar";
 import FeedColumn from "./components/FeedColumn";
@@ -57,6 +58,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionModal, setActionModal] = useState(null);
   const [featureDrawer, setFeatureDrawer] = useState(null);
+  const [systemCheckOpen, setSystemCheckOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [draftSaved, setDraftSaved] = useState(Boolean(localStorage.getItem(POST_DRAFT_KEY)));
@@ -706,6 +708,11 @@ function App() {
       return;
     }
 
+    if (item.label === "System Diagnostics") {
+      setSystemCheckOpen(true);
+      return;
+    }
+
     if (item.label === "Activate Premium") {
       openFeatureDrawer("premium");
       return;
@@ -897,6 +904,7 @@ function App() {
           onWalletOpen={handleWalletOpen}
           unreadNotificationsCount={unreadNotificationsCount}
           onNotificationOpen={handleNotificationOpen}
+          onSystemCheckOpen={() => setSystemCheckOpen(true)}
           onProfileMenuAction={handleProfileMenuAction}
           ownPostsCount={ownPosts.length}
         />
@@ -1126,6 +1134,7 @@ function App() {
       ) : null}
 
       <ActionModal modal={actionModal} onClose={() => setActionModal(null)} />
+      <SystemCheckModal isOpen={systemCheckOpen} onClose={() => setSystemCheckOpen(false)} />
       <FeatureDrawer
         currentUser={currentUser}
         drawer={featureDrawer}

@@ -1,4 +1,5 @@
 import {
+  Activity,
   Bell,
   MoonStar,
   Search,
@@ -26,6 +27,7 @@ function TopBar({
   onWalletOpen,
   unreadNotificationsCount,
   onNotificationOpen,
+  onSystemCheckOpen,
   onProfileMenuAction,
   ownPostsCount,
 }) {
@@ -50,6 +52,16 @@ function TopBar({
 
         <button type="button" className="icon-circle icon-circle-primary" onClick={onSearchSubmit}>
           <Search size={18} />
+        </button>
+
+        <button
+          type="button"
+          className="icon-circle icon-circle-muted system-check-btn"
+          title="System Health & Diagnostics"
+          aria-label="System Health & Diagnostics"
+          onClick={onSystemCheckOpen}
+        >
+          <Activity size={18} />
         </button>
 
         <button
