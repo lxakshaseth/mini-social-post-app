@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Edit3, Eye, Heart, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
+import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Download, Edit3, Eye, Heart, Image as ImageIcon, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
 import { getImageUrl, recordPostView } from "../api";
-import { colorFromText, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
+import { colorFromText, downloadPostCardImage, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
 import Avatar from "./Avatar";
 
 function PostCard({
@@ -30,6 +30,7 @@ function PostCard({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
+  const [exportingCard, setExportingCard] = useState(false);
 
   useEffect(() => {
     if (post._id) {
@@ -55,6 +56,19 @@ function PostCard({
       onEditPost(post._id, editText.trim());
     }
     setIsEditing(false);
+  }
+
+  async function handleExportQuoteCard() {
+    setExportingCard(true);
+    try {
+      await downloadPostCardImage(post);
+      onNotify?.("success", "Post image card downloaded!");
+    } catch (err) {
+      onNotify?.("error", "Failed to generate image card.");
+    } finally {
+      setExportingCard(false);
+      setMenuOpen(false);
+    }
   }
 
   async function handleShare() {
@@ -121,45 +135,69 @@ function PostCard({
 
         <div className="post-meta" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span>{relativeTime(post.createdAt)}</span>
-          {isAuthor && (
-            <div style={{ position: "relative" }}>
-              <button
-                type="button"
-                className="icon-btn"
-                title="Post options"
-                onClick={() => setMenuOpen((o) => !o)}
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              className="icon-btn"
+              title="Post options"
+              onClick={() => setMenuOpen((o) => !o)}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                borderRadius: "6px",
+                display: "flex",
+                color: "inherit",
+              }}
+            >
+              <MoreHorizontal size={18} />
+            </button>
+
+            {menuOpen && (
+              <div
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
+                  position: "absolute",
+                  right: 0,
+                  top: "100%",
+                  zIndex: 20,
+                  background: "var(--card-bg, #fff)",
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                   padding: "4px",
-                  borderRadius: "6px",
-                  display: "flex",
-                  color: "inherit",
+                  minWidth: "160px",
                 }}
               >
-                <MoreHorizontal size={18} />
-              </button>
-
-              {menuOpen && (
-                <div
+                <button
+                  type="button"
+                  onClick={handleExportQuoteCard}
+                  disabled={exportingCard}
                   style={{
-                    position: "absolute",
-                    right: 0,
-                    top: "100%",
-                    zIndex: 20,
-                    background: "var(--card-bg, #fff)",
-                    border: "1px solid var(--border-color, #e2e8f0)",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                    padding: "4px",
-                    minWidth: "130px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    textAlign: "left",
+                    color: "inherit",
+                    borderRadius: "4px",
                   }}
                 >
+                  <Download size={14} />
+                  <span>{exportingCard ? "Generating..." : "Save Image Card"}</span>
+                </button>
+
+                {post.text && (
                   <button
                     type="button"
                     onClick={() => {
-                      onPinPost && onPinPost(post._id);
+                      navigator.clipboard.writeText(post.text);
+                      onNotify?.("success", "Post text copied to clipboard!");
                       setMenuOpen(false);
                     }}
                     style={{
@@ -177,15 +215,17 @@ function PostCard({
                       borderRadius: "4px",
                     }}
                   >
-                    <Pin size={14} />
-                    <span>{post.isPinned ? "Unpin Post" : "Pin to Top"}</span>
+                    <Copy size={14} />
+                    <span>Copy text</span>
                   </button>
-                  {post.text && (
+                )}
+
+                {isAuthor && (
+                  <>
                     <button
                       type="button"
                       onClick={() => {
-                        navigator.clipboard.writeText(post.text);
-                        onNotify?.("success", "Post text copied to clipboard!");
+                        onPinPost && onPinPost(post._id);
                         setMenuOpen(false);
                       }}
                       style={{
@@ -203,62 +243,64 @@ function PostCard({
                         borderRadius: "4px",
                       }}
                     >
-                      <Copy size={14} />
-                      <span>Copy text</span>
+                      <Pin size={14} />
+                      <span>{post.isPinned ? "Unpin Post" : "Pin to Top"}</span>
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditing(true);
-                      setMenuOpen(false);
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      fontSize: "13px",
-                      textAlign: "left",
-                      color: "inherit",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    <Edit3 size={14} />
-                    <span>Edit Post</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowDeleteConfirm(true);
-                      setMenuOpen(false);
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      fontSize: "13px",
-                      color: "#ef4444",
-                      textAlign: "left",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    <Trash2 size={14} />
-                    <span>Delete</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(true);
+                        setMenuOpen(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        width: "100%",
+                        padding: "8px 12px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        textAlign: "left",
+                        color: "inherit",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <Edit3 size={14} />
+                      <span>Edit Post</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDeleteConfirm(true);
+                        setMenuOpen(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        width: "100%",
+                        padding: "8px 12px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        color: "#ef4444",
+                        textAlign: "left",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      <span>Delete</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

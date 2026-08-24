@@ -267,3 +267,133 @@ export function highlightText(text, query) {
       : part
   );
 }
+
+export function downloadPostCardImage(post) {
+  return new Promise((resolve, reject) => {
+    try {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const width = 800;
+      const height = 500;
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw Gradient Background
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, "#0f172a");
+      gradient.addColorStop(0.5, "#1e293b");
+      gradient.addColorStop(1, "#0284c7");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+
+      // Card Container
+      ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+      ctx.beginPath();
+      const cardX = 40, cardY = 40, cardW = 720, cardH = 420, radius = 18;
+      ctx.roundRect(cardX, cardY, cardW, cardH, radius);
+      ctx.fill();
+
+      // Brand Ribbon
+      ctx.fillStyle = "#1b84ff";
+      ctx.font = "bold 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText("TASKPLANET SOCIAL POST", cardX + 28, cardY + 40);
+
+      // Author Avatar Circle
+      const avatarX = cardX + 48;
+      const avatarY = cardY + 80;
+      ctx.beginPath();
+      ctx.arc(avatarX, avatarY, 24, 0, Math.PI * 2);
+      ctx.fillStyle = post.authorAvatarColor || "#1b84ff";
+      ctx.fill();
+
+      // Author Initials
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const initials = (post.authorName || "U")
+        .split(" ")
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
+      ctx.fillText(initials, avatarX, avatarY);
+
+      // Author Name & Handle
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(post.authorName || "Member", avatarX + 38, avatarY - 4);
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(`@${post.authorHandle || "user"} · ${formatDate(post.createdAt || new Date())}`, avatarX + 38, avatarY + 16);
+
+      // Post Text / Content (Word Wrapping)
+      const postContent = post.text || (post.imageUrl ? "[Attached Image Post]" : "Community post");
+      ctx.fillStyle = "#1e293b";
+      ctx.font = "17px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      const maxWidth = 640;
+      const lineHeight = 26;
+      const startX = cardX + 28;
+      let startY = cardY + 145;
+
+      const words = postContent.split(" ");
+      let currentLine = "";
+      let linesCount = 0;
+
+      for (let i = 0; i < words.length; i++) {
+        const testLine = currentLine + words[i] + " ";
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && i > 0) {
+          ctx.fillText(currentLine, startX, startY);
+          currentLine = words[i] + " ";
+          startY += lineHeight;
+          linesCount++;
+          if (linesCount >= 6) {
+            ctx.fillText(currentLine + "...", startX, startY);
+            break;
+          }
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (linesCount < 6) {
+        ctx.fillText(currentLine, startX, startY);
+      }
+
+      // Bottom Metrics Strip
+      const bottomY = cardY + cardH - 30;
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "600 13px -apple-system, BlinkMacSystemFont, sans-serif";
+      const likesCount = post.likes?.length || 0;
+      const commentsCount = post.comments?.length || 0;
+      const views = post.viewsCount || 0;
+      ctx.fillText(
+        `❤️ ${likesCount} Likes   💬 ${commentsCount} Comments   👁️ ${views} Views`,
+        cardX + 28,
+        bottomY
+      );
+
+      // Footer Watermark
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#cbd5e1";
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("taskplanet.app", cardX + cardW - 28, bottomY);
+
+      // Trigger Download
+      const dataUrl = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `taskplanet-post-${post._id || Date.now()}.png`;
+      downloadLink.href = dataUrl;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+
+      resolve(true);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
