@@ -87,6 +87,31 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    poll: {
+      question: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      options: [
+        {
+          optionText: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          votes: [
+            {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "User",
+            },
+          ],
+        },
+      ],
+      expiresAt: {
+        type: Date,
+      },
+    },
     likes: {
       type: [likeSchema],
       default: [],

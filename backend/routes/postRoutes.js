@@ -130,8 +130,30 @@ router.post("/", requireDatabase, auth, upload.single("image"), async (req, res)
   try {
     const text = (req.body.text || "").trim();
 
-    if (!text && !req.file) {
-      return res.status(400).json({ message: "Add some text or an image before posting." });
+    let pollData = null;
+    if (req.body.poll) {
+      try {
+        const parsedPoll = typeof req.body.poll === "string" ? JSON.parse(req.body.poll) : req.body.poll;
+        if (parsedPoll && Array.isArray(parsedPoll.options) && parsedPoll.options.length >= 2) {
+          const validOptions = parsedPoll.options
+            .map((opt) => (typeof opt === "string" ? opt.trim() : (opt.optionText || "").trim()))
+            .filter(Boolean);
+
+          if (validOptions.length >= 2) {
+            pollData = {
+              question: (parsedPoll.question || "").trim(),
+              options: validOptions.map((optionText) => ({ optionText, votes: [] })),
+              expiresAt: parsedPoll.expiresAt || null,
+            };
+          }
+        }
+      } catch (err) {
+        // Skip invalid poll payload
+      }
+    }
+
+    if (!text && !req.file && !pollData) {
+      return res.status(400).json({ message: "Add some text, an image, or a poll before posting." });
     }
 
     const post = await Post.create({
@@ -141,11 +163,59 @@ router.post("/", requireDatabase, auth, upload.single("image"), async (req, res)
       authorAvatarColor: req.user.avatarColor,
       text,
       imageUrl: req.file ? `/uploads/${req.file.filename}` : "",
+      poll: pollData,
     });
 
     return res.status(201).json(post);
   } catch (error) {
     return res.status(500).json({ message: "Unable to create post right now." });
+  }
+});
+
+router.post("/:postId/vote", requireDatabase, auth, async (req, res) => {
+  try {
+    const { optionIndex } = req.body;
+    const post = await Post.findById(req.params.postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    if (!post.poll || !Array.isArray(post.poll.options) || post.poll.options.length === 0) {
+      return res.status(400).json({ message: "This post does not have an active poll." });
+    }
+
+    const targetIndex = Number(optionIndex);
+    if (isNaN(targetIndex) || targetIndex < 0 || targetIndex >= post.poll.options.length) {
+      return res.status(400).json({ message: "Invalid option selected." });
+    }
+
+    const userIdStr = req.user._id.toString();
+
+    let previousOptionIndex = -1;
+    post.poll.options.forEach((opt, idx) => {
+      if (opt.votes.some((id) => id.toString() === userIdStr)) {
+        previousOptionIndex = idx;
+      }
+    });
+
+    if (previousOptionIndex === targetIndex) {
+      post.poll.options[targetIndex].votes = post.poll.options[targetIndex].votes.filter(
+        (id) => id.toString() !== userIdStr
+      );
+    } else {
+      if (previousOptionIndex !== -1) {
+        post.poll.options[previousOptionIndex].votes = post.poll.options[previousOptionIndex].votes.filter(
+          (id) => id.toString() !== userIdStr
+        );
+      }
+      post.poll.options[targetIndex].votes.push(req.user._id);
+    }
+
+    await post.save();
+    return res.json(post);
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to record vote." });
   }
 });
 

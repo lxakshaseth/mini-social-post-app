@@ -108,6 +108,16 @@ export function toggleLikeOnPost(postId, token) {
   });
 }
 
+export function votePoll(postId, optionIndex, token) {
+  return apiRequest(`/posts/${postId}/vote`, {
+    method: "POST",
+    body: JSON.stringify({ optionIndex }),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export function toggleBookmarkPost(postId, token) {
   return apiRequest(`/posts/${postId}/bookmark`, {
     method: "POST",
