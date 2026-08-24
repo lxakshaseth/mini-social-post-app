@@ -9,10 +9,12 @@ export const navigationItems = [
 
 export const feedFilters = [
   { id: "all", label: "All Posts" },
+  { id: "polls", label: "Polls" },
+  { id: "media", label: "Media" },
   { id: "saved", label: "Saved" },
   { id: "for-you", label: "For You" },
   { id: "most-liked", label: "Most Liked" },
-  { id: "most-commented", label: "Most Commented" },
+  { id: "most-commented", label: "Most Discussed" },
 ];
 
 export const heroHighlights = [

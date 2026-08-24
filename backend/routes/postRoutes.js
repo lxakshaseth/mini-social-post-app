@@ -41,6 +41,16 @@ router.get("/", async (req, res) => {
     let sort = { createdAt: -1 };
     if (req.query.sort === "most-liked") {
       sort = { "likes.length": -1, createdAt: -1 };
+    } else if (req.query.sort === "most-commented") {
+      sort = { "comments.length": -1, createdAt: -1 };
+    } else if (req.query.sort === "most-viewed") {
+      sort = { viewsCount: -1, createdAt: -1 };
+    }
+
+    if (req.query.filter === "polls" || req.query.sort === "polls-only") {
+      filter["poll.options.0"] = { $exists: true };
+    } else if (req.query.filter === "media" || req.query.sort === "media-only") {
+      filter.imageUrl = { $ne: "" };
     }
 
     if (isPaginated) {

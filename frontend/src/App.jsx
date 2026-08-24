@@ -926,7 +926,11 @@ function App() {
     );
   }
 
-  if (feedFilter === "saved") {
+  if (feedFilter === "polls") {
+    visiblePosts = visiblePosts.filter((post) => post.poll && Array.isArray(post.poll.options) && post.poll.options.length > 0);
+  } else if (feedFilter === "media") {
+    visiblePosts = visiblePosts.filter((post) => Boolean(post.imageUrl));
+  } else if (feedFilter === "saved") {
     const savedIds = new Set(
       (currentUser?.savedPosts || []).map((p) => (p._id ? String(p._id) : String(p)))
     );
@@ -934,6 +938,7 @@ function App() {
   } else if (feedFilter === "for-you") {
     const sortedForYou = [...visiblePosts].sort(
       (left, right) =>
+        (Number(right.isPinned || false) - Number(left.isPinned || false)) ||
         engagementScore(right) - engagementScore(left) ||
         new Date(right.createdAt) - new Date(left.createdAt)
     );
@@ -954,7 +959,7 @@ function App() {
     );
   } else {
     visiblePosts = [...visiblePosts].sort(
-      (left, right) => new Date(right.createdAt) - new Date(left.createdAt)
+      (left, right) => (Number(right.isPinned || false) - Number(left.isPinned || false)) || new Date(right.createdAt) - new Date(left.createdAt)
     );
   }
 
