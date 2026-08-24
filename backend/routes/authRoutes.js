@@ -4,8 +4,14 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
 const requireDatabase = require("../middleware/requireDatabase");
+const { createRateLimiter } = require("../middleware/security");
 
 const router = express.Router();
+const authLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 30,
+  message: "Too many login/signup attempts. Please try again in 15 minutes.",
+});
 
 router.use(requireDatabase);
 
@@ -64,7 +70,7 @@ function serializeUser(user) {
   };
 }
 
-router.post("/signup", async (req, res) => {
+router.post("/signup", authLimiter, async (req, res) => {
   try {
     const name = (req.body.name || "").trim();
     const email = (req.body.email || "").trim().toLowerCase();
@@ -105,7 +111,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   try {
     const email = (req.body.email || "").trim().toLowerCase();
     const password = (req.body.password || "").trim();
