@@ -32,6 +32,7 @@ import {
   getStoredUser,
   heroHighlights,
 } from "./utils";
+import { playDelete, playPop, playSuccess, playToggle } from "./soundEffects";
 
 const POST_DRAFT_KEY = "taskplanet-post-draft";
 const THEME_KEY = "taskplanet-theme";
@@ -406,6 +407,7 @@ function App() {
       }
 
       const createdPost = await createPost(formData, token);
+      playSuccess();
       setPosts((current) => [createdPost, ...current]);
       setComposerFilter("all");
       setFeedFilter("all");
@@ -458,6 +460,7 @@ function App() {
 
     try {
       const updatedPost = await votePoll(postId, optionIndex, token);
+      playSuccess();
       setPosts((current) =>
         current.map((post) => (post._id === postId ? updatedPost : post))
       );
@@ -472,6 +475,7 @@ function App() {
       return;
     }
 
+    playPop();
     setPosts((current) =>
       current.map((post) => {
         if (post._id !== postId) return post;
@@ -496,6 +500,7 @@ function App() {
       return;
     }
 
+    playPop();
     // Optimistic UI update for instant feedback
     setPosts((current) =>
       current.map((post) => {
@@ -544,6 +549,7 @@ function App() {
 
     try {
       const updatedPost = await addComment(postId, text, token);
+      playSuccess();
       setPosts((current) => current.map((post) => (post._id === updatedPost._id ? updatedPost : post)));
       setExpandedPostId(postId);
       setCommentDrafts((current) => ({ ...current, [postId]: "" }));
@@ -563,8 +569,9 @@ function App() {
 
     try {
       await deletePost(postId, token);
+      playDelete();
       setPosts((current) => current.filter((post) => post._id !== postId));
-      setFlash({ type: "success", text: "Post removed successfully." });
+      setFlash({ type: "success", text: "Post deleted successfully." });
     } catch (error) {
       setFlash({ type: "error", text: error.message });
     } finally {
@@ -593,16 +600,15 @@ function App() {
   }
 
   async function handleDeleteComment(postId, commentId) {
-    if (!requireAuth("Log in to delete comments.")) {
+    if (!requireAuth("Log in to delete your comment.")) {
       return;
     }
 
     try {
       const updatedPost = await deleteComment(postId, commentId, token);
-      setPosts((current) =>
-        current.map((post) => (post._id === updatedPost._id ? updatedPost : post))
-      );
-      setFlash({ type: "success", text: "Comment removed." });
+      playDelete();
+      setPosts((current) => current.map((post) => (post._id === updatedPost._id ? updatedPost : post)));
+      setFlash({ type: "success", text: "Comment deleted." });
     } catch (error) {
       setFlash({ type: "error", text: error.message });
     }
@@ -613,6 +619,7 @@ function App() {
       return;
     }
 
+    playPop();
     try {
       const updatedPost = await toggleLikeComment(postId, commentId, token);
       setPosts((current) =>
@@ -624,9 +631,11 @@ function App() {
   }
 
   async function handleBookmark(postId) {
-    if (!requireAuth("Log in to bookmark posts.")) {
+    if (!requireAuth("Log in to save posts.")) {
       return;
     }
+
+    playPop();
 
     const currentSaved = currentUser?.savedPosts || [];
     const isAlreadySaved = currentSaved.some(
@@ -730,6 +739,7 @@ function App() {
   }
 
   function handleThemeToggle() {
+    playToggle();
     setThemeMode((current) => {
       const next = current === "light" ? "night" : "light";
       setFlash({
