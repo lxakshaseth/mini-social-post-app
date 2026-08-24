@@ -127,6 +127,12 @@ export function togglePinPost(postId, token) {
   });
 }
 
+export function recordPostView(postId) {
+  return apiRequest(`/posts/${postId}/view`, {
+    method: "POST",
+  }).catch(() => {});
+}
+
 export function toggleBookmarkPost(postId, token) {
   return apiRequest(`/posts/${postId}/bookmark`, {
     method: "POST",

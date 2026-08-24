@@ -240,6 +240,24 @@ router.post("/:postId/pin", requireDatabase, auth, async (req, res) => {
   }
 });
 
+router.post("/:postId/view", requireDatabase, async (req, res) => {
+  try {
+    const post = await Post.findByIdAndUpdate(
+      req.params.postId,
+      { $inc: { viewsCount: 1 } },
+      { new: true }
+    ).select("viewsCount");
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    return res.json({ viewsCount: post.viewsCount });
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to record view." });
+  }
+});
+
 router.post("/:postId/like", requireDatabase, auth, async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId);

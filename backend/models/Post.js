@@ -87,6 +87,11 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    viewsCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     isPinned: {
       type: Boolean,
       default: false,

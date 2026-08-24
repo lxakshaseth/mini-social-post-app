@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Edit3, Heart, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
-import { getImageUrl } from "../api";
+import { useEffect, useState } from "react";
+import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Edit3, Eye, Heart, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
+import { getImageUrl, recordPostView } from "../api";
 import { colorFromText, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
 import Avatar from "./Avatar";
 
@@ -30,6 +30,12 @@ function PostCard({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
+
+  useEffect(() => {
+    if (post._id) {
+      recordPostView(post._id);
+    }
+  }, [post._id]);
 
   const isAuthor =
     currentUser &&
@@ -600,6 +606,11 @@ function PostCard({
           <Share2 size={18} />
           <span>Share</span>
         </button>
+
+        <div className="action-link static" title={`${post.viewsCount || 0} views`}>
+          <Eye size={16} />
+          <span>{post.viewsCount || 0}</span>
+        </div>
 
         <div className="action-link static">
           <Sparkles size={18} />
