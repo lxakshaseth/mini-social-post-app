@@ -133,6 +133,16 @@ export function recordPostView(postId) {
   }).catch(() => {});
 }
 
+export function reportPost(postId, reason, token) {
+  return apiRequest(`/posts/${postId}/report`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export function toggleBookmarkPost(postId, token) {
   return apiRequest(`/posts/${postId}/bookmark`, {
     method: "POST",

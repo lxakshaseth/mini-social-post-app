@@ -125,6 +125,23 @@ const postSchema = new mongoose.Schema(
       type: [likeSchema],
       default: [],
     },
+    reports: [
+      {
+        reportedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        reason: {
+          type: String,
+          trim: true,
+          default: "Other",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     comments: {
       type: [commentSchema],
       default: [],

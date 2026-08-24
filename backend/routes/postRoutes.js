@@ -268,6 +268,39 @@ router.post("/:postId/view", requireDatabase, async (req, res) => {
   }
 });
 
+router.post("/:postId/report", requireDatabase, auth, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const post = await Post.findById(req.params.postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    if (!Array.isArray(post.reports)) {
+      post.reports = [];
+    }
+
+    const alreadyReported = post.reports.some(
+      (r) => r.reportedBy && r.reportedBy.toString() === req.user._id.toString()
+    );
+
+    if (alreadyReported) {
+      return res.json({ message: "You have already submitted a report for this post." });
+    }
+
+    post.reports.push({
+      reportedBy: req.user._id,
+      reason: (reason || "Inappropriate Content").trim(),
+    });
+
+    await post.save();
+    return res.json({ message: "Thank you. Your report has been recorded for review." });
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to submit report." });
+  }
+});
+
 router.post("/:postId/like", requireDatabase, auth, async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId);

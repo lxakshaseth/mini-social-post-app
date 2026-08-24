@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Download, Edit3, Eye, Heart, Image as ImageIcon, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
+import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Download, Edit3, Eye, Flag, Heart, Image as ImageIcon, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
 import { getImageUrl, recordPostView } from "../api";
 import { colorFromText, downloadPostCardImage, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
 import Avatar from "./Avatar";
@@ -20,6 +20,7 @@ function PostCard({
   onLikeComment,
   onNotify,
   onPinPost,
+  onReportPost,
   onToggleComments,
   onVotePoll,
   post,
@@ -28,6 +29,8 @@ function PostCard({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.text || "");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportReason, setReportReason] = useState("Spam or promotional");
   const [menuOpen, setMenuOpen] = useState(false);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
   const [exportingCard, setExportingCard] = useState(false);
@@ -298,11 +301,116 @@ function PostCard({
                     </button>
                   </>
                 )}
+
+                {!isAuthor && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReportDialog(true);
+                      setMenuOpen(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      width: "100%",
+                      padding: "8px 12px",
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      color: "var(--muted, #64748b)",
+                      textAlign: "left",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <Flag size={14} />
+                    <span>Report Post</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {showReportDialog && (
+        <div
+          style={{
+            background: "rgba(245, 158, 11, 0.08)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            borderRadius: "8px",
+            padding: "12px",
+            margin: "8px 0",
+            display: "grid",
+            gap: "8px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "13px", fontWeight: 600 }}>Report this post</span>
+            <button
+              type="button"
+              onClick={() => setShowReportDialog(false)}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "inherit" }}
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <select
+            value={reportReason}
+            onChange={(e) => setReportReason(e.target.value)}
+            style={{
+              padding: "6px 8px",
+              borderRadius: "6px",
+              border: "1px solid var(--border-color, #cbd5e1)",
+              background: "var(--card-bg, #fff)",
+              color: "inherit",
+              fontSize: "13px",
+            }}
+          >
+            <option value="Spam or promotional">Spam or promotional</option>
+            <option value="Inappropriate or offensive">Inappropriate or offensive</option>
+            <option value="Harassment or hate speech">Harassment or hate speech</option>
+            <option value="Misleading information">Misleading information</option>
+            <option value="Other">Other reason</option>
+          </select>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px" }}>
+            <button
+              type="button"
+              onClick={() => setShowReportDialog(false)}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border-color, #cbd5e1)",
+                borderRadius: "6px",
+                padding: "4px 10px",
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onReportPost && onReportPost(post._id, reportReason);
+                setShowReportDialog(false);
+              }}
+              style={{
+                background: "#f59e0b",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                padding: "4px 12px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Submit Report
+            </button>
+          </div>
+        </div>
+      )}
 
       {showDeleteConfirm && (
         <div

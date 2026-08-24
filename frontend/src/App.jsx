@@ -15,6 +15,7 @@ import {
   fetchCurrentUser,
   fetchPosts,
   loginUser,
+  reportPost,
   signupUser,
   toggleBookmarkPost,
   toggleLikeComment,
@@ -492,6 +493,19 @@ function App() {
     } catch (error) {
       loadPosts();
       showNotice("error", error.message);
+    }
+  }
+
+  async function handleReportPost(postId, reason) {
+    if (!requireAuth("Sign in to report inappropriate content.")) {
+      return;
+    }
+
+    try {
+      const res = await reportPost(postId, reason, token);
+      showNotice("info", res.message || "Post reported for moderation review.");
+    } catch (error) {
+      showNotice("error", error.message || "Failed to submit report.");
     }
   }
 
@@ -1124,6 +1138,7 @@ function App() {
               onPinPost={handleTogglePin}
               onPostTextChange={handlePostTextChange}
               onRemoveImage={removeSelectedImage}
+              onReportPost={handleReportPost}
               onToggleComments={setExpandedPostId}
               onVotePoll={handleVotePoll}
               postForm={postForm}

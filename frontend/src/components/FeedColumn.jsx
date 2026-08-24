@@ -33,6 +33,7 @@ function FeedColumn({
   onPinPost,
   onPostTextChange,
   onRemoveImage,
+  onReportPost,
   onToggleComments,
   onVotePoll,
   postForm,
@@ -507,6 +508,7 @@ function FeedColumn({
             onLikeComment={onLikeComment}
             onNotify={onNotify}
             onPinPost={onPinPost}
+            onReportPost={onReportPost}
             onToggleComments={onToggleComments}
             onVotePoll={onVotePoll}
             post={post}
