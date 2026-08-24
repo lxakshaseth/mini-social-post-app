@@ -219,6 +219,27 @@ router.post("/:postId/vote", requireDatabase, auth, async (req, res) => {
   }
 });
 
+router.post("/:postId/pin", requireDatabase, auth, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Only the author can pin or unpin this post." });
+    }
+
+    post.isPinned = !post.isPinned;
+    await post.save();
+
+    return res.json(post);
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to update post pin status." });
+  }
+});
+
 router.post("/:postId/like", requireDatabase, auth, async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId);

@@ -87,6 +87,10 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
     poll: {
       question: {
         type: String,

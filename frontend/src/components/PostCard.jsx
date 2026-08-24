@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
+import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Edit3, Heart, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
 import { getImageUrl } from "../api";
 import { colorFromText, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
 import Avatar from "./Avatar";
@@ -19,6 +19,7 @@ function PostCard({
   onLike,
   onLikeComment,
   onNotify,
+  onPinPost,
   onToggleComments,
   onVotePoll,
   post,
@@ -80,6 +81,23 @@ function PostCard({
 
   return (
     <article className="post-card card" id={`post-${post._id}`}>
+      {post.isPinned && (
+        <div
+          className="post-pinned-badge"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "var(--primary, #1b84ff)",
+            marginBottom: "8px",
+          }}
+        >
+          <Pin size={13} style={{ transform: "rotate(45deg)" }} />
+          <span>Pinned Post</span>
+        </div>
+      )}
       <div className="post-header">
         <div className="post-author">
           <Avatar
@@ -132,6 +150,30 @@ function PostCard({
                     minWidth: "130px",
                   }}
                 >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPinPost && onPinPost(post._id);
+                      setMenuOpen(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      width: "100%",
+                      padding: "8px 12px",
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      textAlign: "left",
+                      color: "inherit",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <Pin size={14} />
+                    <span>{post.isPinned ? "Unpin Post" : "Pin to Top"}</span>
+                  </button>
                   {post.text && (
                     <button
                       type="button"

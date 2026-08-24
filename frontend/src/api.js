@@ -118,6 +118,15 @@ export function votePoll(postId, optionIndex, token) {
   });
 }
 
+export function togglePinPost(postId, token) {
+  return apiRequest(`/posts/${postId}/pin`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export function toggleBookmarkPost(postId, token) {
   return apiRequest(`/posts/${postId}/bookmark`, {
     method: "POST",

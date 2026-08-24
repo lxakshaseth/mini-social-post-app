@@ -19,6 +19,7 @@ import {
   toggleBookmarkPost,
   toggleLikeComment,
   toggleLikeOnPost,
+  togglePinPost,
   updatePost,
   updateUserProfile,
   votePoll,
@@ -463,6 +464,30 @@ function App() {
     } catch (error) {
       loadPosts();
       setFlash({ type: "error", text: error.message });
+    }
+  }
+
+  async function handleTogglePin(postId) {
+    if (!requireAuth("Sign in to pin posts.")) {
+      return;
+    }
+
+    setPosts((current) =>
+      current.map((post) => {
+        if (post._id !== postId) return post;
+        return { ...post, isPinned: !post.isPinned };
+      })
+    );
+
+    try {
+      const updatedPost = await togglePinPost(postId, token);
+      setPosts((current) =>
+        current.map((post) => (post._id === postId ? updatedPost : post))
+      );
+      showNotice("success", updatedPost.isPinned ? "Post pinned to top of your profile." : "Post unpinned.");
+    } catch (error) {
+      loadPosts();
+      showNotice("error", error.message);
     }
   }
 
@@ -1081,6 +1106,7 @@ function App() {
               onLike={handleLike}
               onLikeComment={handleLikeComment}
               onNotify={showNotice}
+              onPinPost={handleTogglePin}
               onPostTextChange={handlePostTextChange}
               onRemoveImage={removeSelectedImage}
               onToggleComments={setExpandedPostId}
