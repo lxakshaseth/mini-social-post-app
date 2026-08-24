@@ -108,6 +108,41 @@ export function toggleLikeOnPost(postId, token) {
   });
 }
 
+export function votePoll(postId, optionIndex, token) {
+  return apiRequest(`/posts/${postId}/vote`, {
+    method: "POST",
+    body: JSON.stringify({ optionIndex }),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function togglePinPost(postId, token) {
+  return apiRequest(`/posts/${postId}/pin`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function recordPostView(postId) {
+  return apiRequest(`/posts/${postId}/view`, {
+    method: "POST",
+  }).catch(() => {});
+}
+
+export function reportPost(postId, reason, token) {
+  return apiRequest(`/posts/${postId}/report`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export function toggleBookmarkPost(postId, token) {
   return apiRequest(`/posts/${postId}/bookmark`, {
     method: "POST",
@@ -185,3 +220,8 @@ export function requestSupportChat(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function fetchSystemDiagnostics() {
+  return apiRequest("/system/diagnostics");
+}
+

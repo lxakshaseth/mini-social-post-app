@@ -41,6 +41,16 @@ router.get("/", async (req, res) => {
     let sort = { createdAt: -1 };
     if (req.query.sort === "most-liked") {
       sort = { "likes.length": -1, createdAt: -1 };
+    } else if (req.query.sort === "most-commented") {
+      sort = { "comments.length": -1, createdAt: -1 };
+    } else if (req.query.sort === "most-viewed") {
+      sort = { viewsCount: -1, createdAt: -1 };
+    }
+
+    if (req.query.filter === "polls" || req.query.sort === "polls-only") {
+      filter["poll.options.0"] = { $exists: true };
+    } else if (req.query.filter === "media" || req.query.sort === "media-only") {
+      filter.imageUrl = { $ne: "" };
     }
 
     if (isPaginated) {
@@ -130,8 +140,30 @@ router.post("/", requireDatabase, auth, upload.single("image"), async (req, res)
   try {
     const text = (req.body.text || "").trim();
 
-    if (!text && !req.file) {
-      return res.status(400).json({ message: "Add some text or an image before posting." });
+    let pollData = null;
+    if (req.body.poll) {
+      try {
+        const parsedPoll = typeof req.body.poll === "string" ? JSON.parse(req.body.poll) : req.body.poll;
+        if (parsedPoll && Array.isArray(parsedPoll.options) && parsedPoll.options.length >= 2) {
+          const validOptions = parsedPoll.options
+            .map((opt) => (typeof opt === "string" ? opt.trim() : (opt.optionText || "").trim()))
+            .filter(Boolean);
+
+          if (validOptions.length >= 2) {
+            pollData = {
+              question: (parsedPoll.question || "").trim(),
+              options: validOptions.map((optionText) => ({ optionText, votes: [] })),
+              expiresAt: parsedPoll.expiresAt || null,
+            };
+          }
+        }
+      } catch (err) {
+        // Skip invalid poll payload
+      }
+    }
+
+    if (!text && !req.file && !pollData) {
+      return res.status(400).json({ message: "Add some text, an image, or a poll before posting." });
     }
 
     const post = await Post.create({
@@ -141,11 +173,131 @@ router.post("/", requireDatabase, auth, upload.single("image"), async (req, res)
       authorAvatarColor: req.user.avatarColor,
       text,
       imageUrl: req.file ? `/uploads/${req.file.filename}` : "",
+      poll: pollData,
     });
 
     return res.status(201).json(post);
   } catch (error) {
     return res.status(500).json({ message: "Unable to create post right now." });
+  }
+});
+
+router.post("/:postId/vote", requireDatabase, auth, async (req, res) => {
+  try {
+    const { optionIndex } = req.body;
+    const post = await Post.findById(req.params.postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    if (!post.poll || !Array.isArray(post.poll.options) || post.poll.options.length === 0) {
+      return res.status(400).json({ message: "This post does not have an active poll." });
+    }
+
+    const targetIndex = Number(optionIndex);
+    if (isNaN(targetIndex) || targetIndex < 0 || targetIndex >= post.poll.options.length) {
+      return res.status(400).json({ message: "Invalid option selected." });
+    }
+
+    const userIdStr = req.user._id.toString();
+
+    let previousOptionIndex = -1;
+    post.poll.options.forEach((opt, idx) => {
+      if (opt.votes.some((id) => id.toString() === userIdStr)) {
+        previousOptionIndex = idx;
+      }
+    });
+
+    if (previousOptionIndex === targetIndex) {
+      post.poll.options[targetIndex].votes = post.poll.options[targetIndex].votes.filter(
+        (id) => id.toString() !== userIdStr
+      );
+    } else {
+      if (previousOptionIndex !== -1) {
+        post.poll.options[previousOptionIndex].votes = post.poll.options[previousOptionIndex].votes.filter(
+          (id) => id.toString() !== userIdStr
+        );
+      }
+      post.poll.options[targetIndex].votes.push(req.user._id);
+    }
+
+    await post.save();
+    return res.json(post);
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to record vote." });
+  }
+});
+
+router.post("/:postId/pin", requireDatabase, auth, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Only the author can pin or unpin this post." });
+    }
+
+    post.isPinned = !post.isPinned;
+    await post.save();
+
+    return res.json(post);
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to update post pin status." });
+  }
+});
+
+router.post("/:postId/view", requireDatabase, async (req, res) => {
+  try {
+    const post = await Post.findByIdAndUpdate(
+      req.params.postId,
+      { $inc: { viewsCount: 1 } },
+      { new: true }
+    ).select("viewsCount");
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    return res.json({ viewsCount: post.viewsCount });
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to record view." });
+  }
+});
+
+router.post("/:postId/report", requireDatabase, auth, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const post = await Post.findById(req.params.postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    if (!Array.isArray(post.reports)) {
+      post.reports = [];
+    }
+
+    const alreadyReported = post.reports.some(
+      (r) => r.reportedBy && r.reportedBy.toString() === req.user._id.toString()
+    );
+
+    if (alreadyReported) {
+      return res.json({ message: "You have already submitted a report for this post." });
+    }
+
+    post.reports.push({
+      reportedBy: req.user._id,
+      reason: (reason || "Inappropriate Content").trim(),
+    });
+
+    await post.save();
+    return res.json({ message: "Thank you. Your report has been recorded for review." });
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to submit report." });
   }
 });
 

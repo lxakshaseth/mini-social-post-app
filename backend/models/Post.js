@@ -87,10 +87,61 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    viewsCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    poll: {
+      question: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      options: [
+        {
+          optionText: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          votes: [
+            {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "User",
+            },
+          ],
+        },
+      ],
+      expiresAt: {
+        type: Date,
+      },
+    },
     likes: {
       type: [likeSchema],
       default: [],
     },
+    reports: [
+      {
+        reportedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        reason: {
+          type: String,
+          trim: true,
+          default: "Other",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     comments: {
       type: [commentSchema],
       default: [],

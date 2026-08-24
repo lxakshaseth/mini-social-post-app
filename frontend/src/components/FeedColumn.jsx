@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ImagePlus, Send, Sparkles, UploadCloud } from "lucide-react";
+import { ImagePlus, Plus, Send, Sparkles, Trash2, UploadCloud, Vote, X } from "lucide-react";
 import { feedFilters } from "../utils";
 import Avatar from "./Avatar";
 import FeedInsights from "./FeedInsights";
@@ -30,9 +30,12 @@ function FeedColumn({
   onLike,
   onLikeComment,
   onNotify,
+  onPinPost,
   onPostTextChange,
   onRemoveImage,
+  onReportPost,
   onToggleComments,
+  onVotePoll,
   postForm,
   postLoading,
   searchTerm,
@@ -40,8 +43,33 @@ function FeedColumn({
   visiblePosts,
 }) {
   const [isDragging, setIsDragging] = useState(false);
+  const [showPollCreator, setShowPollCreator] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
   const postCharacterCount = postForm.text.length;
-  const isPostDisabled = postLoading || (!postForm.text.trim() && !postForm.image);
+  const hasValidPoll = showPollCreator && pollOptions.filter((o) => o.trim()).length >= 2;
+  const isPostDisabled =
+    postLoading ||
+    (!postForm.text.trim() && !postForm.image && !hasValidPoll);
+
+  function handleFormSubmit() {
+    let pollPayload = null;
+    if (showPollCreator) {
+      const validOptions = pollOptions.map((o) => o.trim()).filter(Boolean);
+      if (validOptions.length >= 2) {
+        pollPayload = {
+          question: pollQuestion.trim(),
+          options: validOptions.map((optText) => ({ optionText: optText })),
+        };
+      }
+    }
+    onCreatePost(pollPayload);
+    if (pollPayload) {
+      setShowPollCreator(false);
+      setPollQuestion("");
+      setPollOptions(["", ""]);
+    }
+  }
 
   function handleDragOver(e) {
     e.preventDefault();
@@ -217,12 +245,132 @@ function FeedColumn({
           ))}
         </div>
 
+        {showPollCreator && (
+          <div
+            className="composer-poll-creator"
+            style={{
+              background: "var(--poll-bg, rgba(27, 132, 255, 0.05))",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: "10px",
+              padding: "12px",
+              margin: "10px 0",
+              display: "grid",
+              gap: "8px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <strong style={{ fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <Vote size={16} color="var(--primary, #1b84ff)" />
+                Create a Community Poll
+              </strong>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setShowPollCreator(false)}
+                title="Cancel Poll"
+                style={{ background: "transparent", border: "none", cursor: "pointer", color: "inherit" }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <input
+              type="text"
+              placeholder="Ask a question... (optional)"
+              value={pollQuestion}
+              onChange={(e) => setPollQuestion(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px 10px",
+                borderRadius: "6px",
+                border: "1px solid var(--border-color, #cbd5e1)",
+                background: "var(--card-bg, #fff)",
+                color: "inherit",
+                fontSize: "13px",
+              }}
+            />
+
+            {pollOptions.map((option, idx) => (
+              <div key={idx} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <input
+                  type="text"
+                  placeholder={`Option ${idx + 1}`}
+                  value={option}
+                  onChange={(e) => {
+                    const updated = [...pollOptions];
+                    updated[idx] = e.target.value;
+                    setPollOptions(updated);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "8px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--border-color, #cbd5e1)",
+                    background: "var(--card-bg, #fff)",
+                    color: "inherit",
+                    fontSize: "13px",
+                  }}
+                />
+                {pollOptions.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== idx))}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "#ef4444",
+                      cursor: "pointer",
+                      padding: "4px",
+                    }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+              {pollOptions.length < 4 ? (
+                <button
+                  type="button"
+                  onClick={() => setPollOptions([...pollOptions, ""])}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--primary, #1b84ff)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <Plus size={14} /> Add Option
+                </button>
+              ) : <span />}
+              <span style={{ fontSize: "11px", color: "var(--muted, #64748b)" }}>
+                2-4 choices supported
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="composer-actions">
           <label className="action-pill upload-pill">
             <ImagePlus size={18} />
             <span>Add Image</span>
             <input type="file" accept="image/*" onChange={onImageChange} hidden />
           </label>
+
+          <button
+            type="button"
+            className={`action-pill ${showPollCreator ? "active" : ""}`}
+            onClick={() => setShowPollCreator((p) => !p)}
+          >
+            <Vote size={18} />
+            <span>{showPollCreator ? "Poll Active" : "Add Poll"}</span>
+          </button>
 
           <button type="button" className="action-pill">
             <Sparkles size={18} />
@@ -233,7 +381,7 @@ function FeedColumn({
             <span>Clear Draft</span>
           </button>
 
-          <button type="button" className="primary-action" onClick={onCreatePost} disabled={isPostDisabled}>
+          <button type="button" className="primary-action" onClick={handleFormSubmit} disabled={isPostDisabled}>
             <Send size={18} />
             <span>{postLoading ? "Posting..." : "Post"}</span>
           </button>
@@ -359,7 +507,10 @@ function FeedColumn({
             onLike={onLike}
             onLikeComment={onLikeComment}
             onNotify={onNotify}
+            onPinPost={onPinPost}
+            onReportPost={onReportPost}
             onToggleComments={onToggleComments}
+            onVotePoll={onVotePoll}
             post={post}
             searchTerm={searchTerm}
           />

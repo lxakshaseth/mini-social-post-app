@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Bookmark, Check, Copy, Edit3, Heart, MessageSquare, MoreHorizontal, Send, Share2, Sparkles, Trash2, X } from "lucide-react";
-import { getImageUrl } from "../api";
-import { colorFromText, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
+import { useEffect, useState } from "react";
+import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Download, Edit3, Eye, Flag, Heart, Image as ImageIcon, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
+import { getImageUrl, recordPostView } from "../api";
+import { colorFromText, downloadPostCardImage, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
 import Avatar from "./Avatar";
 
 function PostCard({
@@ -19,15 +19,27 @@ function PostCard({
   onLike,
   onLikeComment,
   onNotify,
+  onPinPost,
+  onReportPost,
   onToggleComments,
+  onVotePoll,
   post,
   searchTerm,
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.text || "");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportReason, setReportReason] = useState("Spam or promotional");
   const [menuOpen, setMenuOpen] = useState(false);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
+  const [exportingCard, setExportingCard] = useState(false);
+
+  useEffect(() => {
+    if (post._id) {
+      recordPostView(post._id);
+    }
+  }, [post._id]);
 
   const isAuthor =
     currentUser &&
@@ -47,6 +59,19 @@ function PostCard({
       onEditPost(post._id, editText.trim());
     }
     setIsEditing(false);
+  }
+
+  async function handleExportQuoteCard() {
+    setExportingCard(true);
+    try {
+      await downloadPostCardImage(post);
+      onNotify?.("success", "Post image card downloaded!");
+    } catch (err) {
+      onNotify?.("error", "Failed to generate image card.");
+    } finally {
+      setExportingCard(false);
+      setMenuOpen(false);
+    }
   }
 
   async function handleShare() {
@@ -79,6 +104,23 @@ function PostCard({
 
   return (
     <article className="post-card card" id={`post-${post._id}`}>
+      {post.isPinned && (
+        <div
+          className="post-pinned-badge"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "var(--primary, #1b84ff)",
+            marginBottom: "8px",
+          }}
+        >
+          <Pin size={13} style={{ transform: "rotate(45deg)" }} />
+          <span>Pinned Post</span>
+        </div>
+      )}
       <div className="post-header">
         <div className="post-author">
           <Avatar
@@ -96,72 +138,69 @@ function PostCard({
 
         <div className="post-meta" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span>{relativeTime(post.createdAt)}</span>
-          {isAuthor && (
-            <div style={{ position: "relative" }}>
-              <button
-                type="button"
-                className="icon-btn"
-                title="Post options"
-                onClick={() => setMenuOpen((o) => !o)}
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              className="icon-btn"
+              title="Post options"
+              onClick={() => setMenuOpen((o) => !o)}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                borderRadius: "6px",
+                display: "flex",
+                color: "inherit",
+              }}
+            >
+              <MoreHorizontal size={18} />
+            </button>
+
+            {menuOpen && (
+              <div
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
+                  position: "absolute",
+                  right: 0,
+                  top: "100%",
+                  zIndex: 20,
+                  background: "var(--card-bg, #fff)",
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                   padding: "4px",
-                  borderRadius: "6px",
-                  display: "flex",
-                  color: "inherit",
+                  minWidth: "160px",
                 }}
               >
-                <MoreHorizontal size={18} />
-              </button>
-
-              {menuOpen && (
-                <div
+                <button
+                  type="button"
+                  onClick={handleExportQuoteCard}
+                  disabled={exportingCard}
                   style={{
-                    position: "absolute",
-                    right: 0,
-                    top: "100%",
-                    zIndex: 20,
-                    background: "var(--card-bg, #fff)",
-                    border: "1px solid var(--border-color, #e2e8f0)",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                    padding: "4px",
-                    minWidth: "130px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    textAlign: "left",
+                    color: "inherit",
+                    borderRadius: "4px",
                   }}
                 >
-                  {post.text && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(post.text);
-                        onNotify?.("success", "Post text copied to clipboard!");
-                        setMenuOpen(false);
-                      }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        width: "100%",
-                        padding: "8px 12px",
-                        border: "none",
-                        background: "transparent",
-                        cursor: "pointer",
-                        fontSize: "13px",
-                        textAlign: "left",
-                        color: "inherit",
-                        borderRadius: "4px",
-                      }}
-                    >
-                      <Copy size={14} />
-                      <span>Copy text</span>
-                    </button>
-                  )}
+                  <Download size={14} />
+                  <span>{exportingCard ? "Generating..." : "Save Image Card"}</span>
+                </button>
+
+                {post.text && (
                   <button
                     type="button"
                     onClick={() => {
-                      setIsEditing(true);
+                      navigator.clipboard.writeText(post.text);
+                      onNotify?.("success", "Post text copied to clipboard!");
                       setMenuOpen(false);
                     }}
                     style={{
@@ -179,13 +218,95 @@ function PostCard({
                       borderRadius: "4px",
                     }}
                   >
-                    <Edit3 size={14} />
-                    <span>Edit Post</span>
+                    <Copy size={14} />
+                    <span>Copy text</span>
                   </button>
+                )}
+
+                {isAuthor && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onPinPost && onPinPost(post._id);
+                        setMenuOpen(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        width: "100%",
+                        padding: "8px 12px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        textAlign: "left",
+                        color: "inherit",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <Pin size={14} />
+                      <span>{post.isPinned ? "Unpin Post" : "Pin to Top"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(true);
+                        setMenuOpen(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        width: "100%",
+                        padding: "8px 12px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        textAlign: "left",
+                        color: "inherit",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <Edit3 size={14} />
+                      <span>Edit Post</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDeleteConfirm(true);
+                        setMenuOpen(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        width: "100%",
+                        padding: "8px 12px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        color: "#ef4444",
+                        textAlign: "left",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      <span>Delete</span>
+                    </button>
+                  </>
+                )}
+
+                {!isAuthor && (
                   <button
                     type="button"
                     onClick={() => {
-                      setShowDeleteConfirm(true);
+                      setShowReportDialog(true);
                       setMenuOpen(false);
                     }}
                     style={{
@@ -198,20 +319,98 @@ function PostCard({
                       background: "transparent",
                       cursor: "pointer",
                       fontSize: "13px",
-                      color: "#ef4444",
+                      color: "var(--muted, #64748b)",
                       textAlign: "left",
                       borderRadius: "4px",
                     }}
                   >
-                    <Trash2 size={14} />
-                    <span>Delete</span>
+                    <Flag size={14} />
+                    <span>Report Post</span>
                   </button>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {showReportDialog && (
+        <div
+          style={{
+            background: "rgba(245, 158, 11, 0.08)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            borderRadius: "8px",
+            padding: "12px",
+            margin: "8px 0",
+            display: "grid",
+            gap: "8px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "13px", fontWeight: 600 }}>Report this post</span>
+            <button
+              type="button"
+              onClick={() => setShowReportDialog(false)}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "inherit" }}
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <select
+            value={reportReason}
+            onChange={(e) => setReportReason(e.target.value)}
+            style={{
+              padding: "6px 8px",
+              borderRadius: "6px",
+              border: "1px solid var(--border-color, #cbd5e1)",
+              background: "var(--card-bg, #fff)",
+              color: "inherit",
+              fontSize: "13px",
+            }}
+          >
+            <option value="Spam or promotional">Spam or promotional</option>
+            <option value="Inappropriate or offensive">Inappropriate or offensive</option>
+            <option value="Harassment or hate speech">Harassment or hate speech</option>
+            <option value="Misleading information">Misleading information</option>
+            <option value="Other">Other reason</option>
+          </select>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px" }}>
+            <button
+              type="button"
+              onClick={() => setShowReportDialog(false)}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border-color, #cbd5e1)",
+                borderRadius: "6px",
+                padding: "4px 10px",
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onReportPost && onReportPost(post._id, reportReason);
+                setShowReportDialog(false);
+              }}
+              style={{
+                background: "#f59e0b",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                padding: "4px 12px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Submit Report
+            </button>
+          </div>
+        </div>
+      )}
 
       {showDeleteConfirm && (
         <div
@@ -365,6 +564,131 @@ function PostCard({
         </div>
       ) : null}
 
+      {post.poll && Array.isArray(post.poll.options) && post.poll.options.length > 0 && (
+        <div
+          className="post-poll-box"
+          style={{
+            margin: "12px 0",
+            padding: "14px",
+            borderRadius: "10px",
+            background: "var(--poll-bg, rgba(27, 132, 255, 0.04))",
+            border: "1px solid var(--border-color, #e2e8f0)",
+          }}
+        >
+          {post.poll.question && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px", fontWeight: 600 }}>
+              <Vote size={16} color="var(--primary, #1b84ff)" />
+              <span>{post.poll.question}</span>
+            </div>
+          )}
+
+          {(() => {
+            const totalVotes = post.poll.options.reduce(
+              (acc, opt) => acc + (Array.isArray(opt.votes) ? opt.votes.length : 0),
+              0
+            );
+            const userHasVoted = post.poll.options.some((opt) =>
+              opt.votes?.some((id) => String(id) === String(currentUser?._id))
+            );
+
+            return (
+              <div style={{ display: "grid", gap: "8px" }}>
+                {post.poll.options.map((opt, idx) => {
+                  const voteCount = Array.isArray(opt.votes) ? opt.votes.length : 0;
+                  const percent = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                  const isUserPick = opt.votes?.some(
+                    (id) => String(id) === String(currentUser?._id)
+                  );
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      disabled={busyPostId === post._id}
+                      onClick={() => onVotePoll && onVotePoll(post._id, idx)}
+                      style={{
+                        position: "relative",
+                        overflow: "hidden",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 14px",
+                        borderRadius: "8px",
+                        border: isUserPick
+                          ? "1.5px solid var(--primary, #1b84ff)"
+                          : "1px solid var(--border-color, #cbd5e1)",
+                        background: "var(--card-bg, #fff)",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: isUserPick ? 600 : 500,
+                        textAlign: "left",
+                        color: "inherit",
+                        transition: "border-color 0.2s ease, transform 0.1s ease",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: `${percent}%`,
+                          background: isUserPick
+                            ? "rgba(27, 132, 255, 0.2)"
+                            : "rgba(203, 213, 225, 0.25)",
+                          zIndex: 1,
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                      <span
+                        style={{
+                          position: "relative",
+                          zIndex: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        {isUserPick && <CheckCircle2 size={15} color="var(--primary, #1b84ff)" />}
+                        {opt.optionText}
+                      </span>
+                      <span
+                        style={{
+                          position: "relative",
+                          zIndex: 2,
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: "var(--muted, #64748b)",
+                        }}
+                      >
+                        {percent}% ({voteCount})
+                      </span>
+                    </button>
+                  );
+                })}
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "11px",
+                    color: "var(--muted, #64748b)",
+                    marginTop: "4px",
+                    padding: "0 2px",
+                  }}
+                >
+                  <span>
+                    {totalVotes} total vote{totalVotes === 1 ? "" : "s"}
+                    {userHasVoted ? " · Click your choice to change or remove" : " · Click option to vote"}
+                  </span>
+                  <span>Interactive Poll</span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {post.likes.length ? (
         <div className="identity-strip">
           <span>Liked by:</span>
@@ -432,6 +756,11 @@ function PostCard({
           <Share2 size={18} />
           <span>Share</span>
         </button>
+
+        <div className="action-link static" title={`${post.viewsCount || 0} views`}>
+          <Eye size={16} />
+          <span>{post.viewsCount || 0}</span>
+        </div>
 
         <div className="action-link static">
           <Sparkles size={18} />

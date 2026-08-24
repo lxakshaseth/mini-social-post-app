@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowUp, CheckCircle2, Info, X } from "lucide-react";
 import ActionModal from "./components/ActionModal";
 import FeatureDrawer from "./components/FeatureDrawer";
+import SystemCheckModal from "./components/SystemCheckModal";
 import LeftRail from "./components/LeftRail";
 import TopBar from "./components/TopBar";
 import FeedColumn from "./components/FeedColumn";
@@ -14,12 +15,15 @@ import {
   fetchCurrentUser,
   fetchPosts,
   loginUser,
+  reportPost,
   signupUser,
   toggleBookmarkPost,
   toggleLikeComment,
   toggleLikeOnPost,
+  togglePinPost,
   updatePost,
   updateUserProfile,
+  votePoll,
 } from "./api";
 import {
   compressImage,
@@ -29,6 +33,7 @@ import {
   getStoredUser,
   heroHighlights,
 } from "./utils";
+import { playDelete, playPop, playSuccess, playToggle } from "./soundEffects";
 
 const POST_DRAFT_KEY = "taskplanet-post-draft";
 const THEME_KEY = "taskplanet-theme";
@@ -57,6 +62,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionModal, setActionModal] = useState(null);
   const [featureDrawer, setFeatureDrawer] = useState(null);
+  const [systemCheckOpen, setSystemCheckOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [draftSaved, setDraftSaved] = useState(Boolean(localStorage.getItem(POST_DRAFT_KEY)));
@@ -64,6 +70,7 @@ function App() {
   const [postLoading, setPostLoading] = useState(false);
   const [busyPostId, setBusyPostId] = useState("");
   const [dismissedActivityIds, setDismissedActivityIds] = useState([]);
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== "undefined" ? navigator.onLine : true));
   const heroRef = useRef(null);
   const feedRef = useRef(null);
   const activityRef = useRef(null);
@@ -73,6 +80,25 @@ function App() {
 
   useEffect(() => {
     loadPosts();
+  }, []);
+
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+      showNotice("success", "Connection restored. Live feed synchronized.");
+      loadPosts();
+    }
+    function handleOffline() {
+      setIsOnline(false);
+      showNotice("info", "You are currently offline. Drafts will save locally.");
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   useEffect(() => {
@@ -152,6 +178,7 @@ function App() {
         setMenuOpen(false);
         setActionModal(null);
         setFeatureDrawer(null);
+        setSystemCheckOpen(false);
         setLightboxImage("");
         return;
       }
@@ -170,6 +197,12 @@ function App() {
           composerTextarea.scrollIntoView({ behavior: "smooth", block: "center" });
           composerTextarea.focus();
         }
+      } else if (event.key === "d" || event.key === "D") {
+        event.preventDefault();
+        setSystemCheckOpen((prev) => !prev);
+      } else if (event.key === "t" || event.key === "T") {
+        event.preventDefault();
+        handleThemeToggle();
       } else if (event.key === "?") {
         event.preventDefault();
         setActionModal({
@@ -179,6 +212,8 @@ function App() {
           points: [
             "/ - Focus search bar immediately",
             "C or N - Create new post (focus composer)",
+            "D - Open System Health & Diagnostics",
+            "T - Toggle Light / Night mode",
             "J / K - Navigate to next / previous post in feed",
             "Esc - Close open dialogs, drawers, and lightboxes",
             "? - Show this keyboard shortcut guide",
@@ -374,13 +409,13 @@ function App() {
     }
   }
 
-  async function handleCreatePost() {
+  async function handleCreatePost(pollPayload) {
     if (!requireAuth("Sign in to create a post.")) {
       return;
     }
 
-    if (!postForm.text.trim() && !postForm.image) {
-      setFlash({ type: "error", text: "Add text or choose an image before posting." });
+    if (!postForm.text.trim() && !postForm.image && !pollPayload) {
+      setFlash({ type: "error", text: "Add text, choose an image, or create a poll before posting." });
       return;
     }
 
@@ -397,7 +432,12 @@ function App() {
         formData.append("image", postForm.image);
       }
 
+      if (pollPayload) {
+        formData.append("poll", JSON.stringify(pollPayload));
+      }
+
       const createdPost = await createPost(formData, token);
+      playSuccess();
       setPosts((current) => [createdPost, ...current]);
       setComposerFilter("all");
       setFeedFilter("all");
@@ -410,11 +450,100 @@ function App() {
     }
   }
 
+  async function handleVotePoll(postId, optionIndex) {
+    if (!requireAuth("Sign in to vote in community polls.")) {
+      return;
+    }
+
+    // Optimistic poll vote update
+    setPosts((current) =>
+      current.map((post) => {
+        if (post._id !== postId || !post.poll || !post.poll.options) return post;
+        const userId = currentUser?._id;
+        const updatedOptions = post.poll.options.map((opt, idx) => {
+          const currentVotes = Array.isArray(opt.votes) ? opt.votes : [];
+          const hasVotedThis = currentVotes.some((id) => String(id) === String(userId));
+          if (idx === optionIndex) {
+            return {
+              ...opt,
+              votes: hasVotedThis
+                ? currentVotes.filter((id) => String(id) !== String(userId))
+                : [...currentVotes, userId],
+            };
+          } else {
+            return {
+              ...opt,
+              votes: currentVotes.filter((id) => String(id) !== String(userId)),
+            };
+          }
+        });
+
+        return {
+          ...post,
+          poll: {
+            ...post.poll,
+            options: updatedOptions,
+          },
+        };
+      })
+    );
+
+    try {
+      const updatedPost = await votePoll(postId, optionIndex, token);
+      playSuccess();
+      setPosts((current) =>
+        current.map((post) => (post._id === postId ? updatedPost : post))
+      );
+    } catch (error) {
+      loadPosts();
+      setFlash({ type: "error", text: error.message });
+    }
+  }
+
+  async function handleTogglePin(postId) {
+    if (!requireAuth("Sign in to pin posts.")) {
+      return;
+    }
+
+    playPop();
+    setPosts((current) =>
+      current.map((post) => {
+        if (post._id !== postId) return post;
+        return { ...post, isPinned: !post.isPinned };
+      })
+    );
+
+    try {
+      const updatedPost = await togglePinPost(postId, token);
+      setPosts((current) =>
+        current.map((post) => (post._id === postId ? updatedPost : post))
+      );
+      showNotice("success", updatedPost.isPinned ? "Post pinned to top of your profile." : "Post unpinned.");
+    } catch (error) {
+      loadPosts();
+      showNotice("error", error.message);
+    }
+  }
+
+  async function handleReportPost(postId, reason) {
+    if (!requireAuth("Sign in to report inappropriate content.")) {
+      return;
+    }
+
+    try {
+      const res = await reportPost(postId, reason, token);
+      showNotice("info", res.message || "Post reported for moderation review.");
+    } catch (error) {
+      showNotice("error", error.message || "Failed to submit report.");
+    }
+  }
+
   async function handleLike(postId) {
     if (!requireAuth("Log in to like posts.")) {
       return;
     }
 
+    playPop();
     // Optimistic UI update for instant feedback
     setPosts((current) =>
       current.map((post) => {
@@ -463,6 +592,7 @@ function App() {
 
     try {
       const updatedPost = await addComment(postId, text, token);
+      playSuccess();
       setPosts((current) => current.map((post) => (post._id === updatedPost._id ? updatedPost : post)));
       setExpandedPostId(postId);
       setCommentDrafts((current) => ({ ...current, [postId]: "" }));
@@ -482,8 +612,9 @@ function App() {
 
     try {
       await deletePost(postId, token);
+      playDelete();
       setPosts((current) => current.filter((post) => post._id !== postId));
-      setFlash({ type: "success", text: "Post removed successfully." });
+      setFlash({ type: "success", text: "Post deleted successfully." });
     } catch (error) {
       setFlash({ type: "error", text: error.message });
     } finally {
@@ -512,16 +643,15 @@ function App() {
   }
 
   async function handleDeleteComment(postId, commentId) {
-    if (!requireAuth("Log in to delete comments.")) {
+    if (!requireAuth("Log in to delete your comment.")) {
       return;
     }
 
     try {
       const updatedPost = await deleteComment(postId, commentId, token);
-      setPosts((current) =>
-        current.map((post) => (post._id === updatedPost._id ? updatedPost : post))
-      );
-      setFlash({ type: "success", text: "Comment removed." });
+      playDelete();
+      setPosts((current) => current.map((post) => (post._id === updatedPost._id ? updatedPost : post)));
+      setFlash({ type: "success", text: "Comment deleted." });
     } catch (error) {
       setFlash({ type: "error", text: error.message });
     }
@@ -532,6 +662,7 @@ function App() {
       return;
     }
 
+    playPop();
     try {
       const updatedPost = await toggleLikeComment(postId, commentId, token);
       setPosts((current) =>
@@ -543,9 +674,11 @@ function App() {
   }
 
   async function handleBookmark(postId) {
-    if (!requireAuth("Log in to bookmark posts.")) {
+    if (!requireAuth("Log in to save posts.")) {
       return;
     }
+
+    playPop();
 
     const currentSaved = currentUser?.savedPosts || [];
     const isAlreadySaved = currentSaved.some(
@@ -649,6 +782,7 @@ function App() {
   }
 
   function handleThemeToggle() {
+    playToggle();
     setThemeMode((current) => {
       const next = current === "light" ? "night" : "light";
       setFlash({
@@ -703,6 +837,11 @@ function App() {
 
     if (item.label === "My Profile") {
       openFeatureDrawer("profile");
+      return;
+    }
+
+    if (item.label === "System Diagnostics") {
+      setSystemCheckOpen(true);
       return;
     }
 
@@ -840,7 +979,11 @@ function App() {
     );
   }
 
-  if (feedFilter === "saved") {
+  if (feedFilter === "polls") {
+    visiblePosts = visiblePosts.filter((post) => post.poll && Array.isArray(post.poll.options) && post.poll.options.length > 0);
+  } else if (feedFilter === "media") {
+    visiblePosts = visiblePosts.filter((post) => Boolean(post.imageUrl));
+  } else if (feedFilter === "saved") {
     const savedIds = new Set(
       (currentUser?.savedPosts || []).map((p) => (p._id ? String(p._id) : String(p)))
     );
@@ -848,6 +991,7 @@ function App() {
   } else if (feedFilter === "for-you") {
     const sortedForYou = [...visiblePosts].sort(
       (left, right) =>
+        (Number(right.isPinned || false) - Number(left.isPinned || false)) ||
         engagementScore(right) - engagementScore(left) ||
         new Date(right.createdAt) - new Date(left.createdAt)
     );
@@ -868,7 +1012,7 @@ function App() {
     );
   } else {
     visiblePosts = [...visiblePosts].sort(
-      (left, right) => new Date(right.createdAt) - new Date(left.createdAt)
+      (left, right) => (Number(right.isPinned || false) - Number(left.isPinned || false)) || new Date(right.createdAt) - new Date(left.createdAt)
     );
   }
 
@@ -880,6 +1024,26 @@ function App() {
       <LeftRail activeNav={activeNav} onNavClick={handleNavClick} />
 
       <main className="main-stage">
+        {!isOnline && (
+          <div
+            className="offline-banner"
+            style={{
+              background: "#f59e0b",
+              color: "#fff",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              marginBottom: "12px",
+              fontSize: "13px",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <AlertCircle size={16} />
+            <span>You are currently offline. Feed is operating in offline mode.</span>
+          </div>
+        )}
         <TopBar
           currentUser={currentUser}
           menuOpen={menuOpen}
@@ -897,6 +1061,7 @@ function App() {
           onWalletOpen={handleWalletOpen}
           unreadNotificationsCount={unreadNotificationsCount}
           onNotificationOpen={handleNotificationOpen}
+          onSystemCheckOpen={() => setSystemCheckOpen(true)}
           onProfileMenuAction={handleProfileMenuAction}
           ownPostsCount={ownPosts.length}
         />
@@ -1019,9 +1184,12 @@ function App() {
               onLike={handleLike}
               onLikeComment={handleLikeComment}
               onNotify={showNotice}
+              onPinPost={handleTogglePin}
               onPostTextChange={handlePostTextChange}
               onRemoveImage={removeSelectedImage}
+              onReportPost={handleReportPost}
               onToggleComments={setExpandedPostId}
+              onVotePoll={handleVotePoll}
               postForm={postForm}
               postLoading={postLoading}
               searchTerm={searchTerm}
@@ -1126,6 +1294,7 @@ function App() {
       ) : null}
 
       <ActionModal modal={actionModal} onClose={() => setActionModal(null)} />
+      <SystemCheckModal isOpen={systemCheckOpen} onClose={() => setSystemCheckOpen(false)} />
       <FeatureDrawer
         currentUser={currentUser}
         drawer={featureDrawer}

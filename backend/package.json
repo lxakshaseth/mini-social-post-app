@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test": "node test-api.js"
+    "test": "node test-api.js",
+    "system-check": "node system-check.js",
+    "test:all": "node test-api.js && node system-check.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
