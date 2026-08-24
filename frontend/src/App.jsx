@@ -70,6 +70,7 @@ function App() {
   const [postLoading, setPostLoading] = useState(false);
   const [busyPostId, setBusyPostId] = useState("");
   const [dismissedActivityIds, setDismissedActivityIds] = useState([]);
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== "undefined" ? navigator.onLine : true));
   const heroRef = useRef(null);
   const feedRef = useRef(null);
   const activityRef = useRef(null);
@@ -79,6 +80,25 @@ function App() {
 
   useEffect(() => {
     loadPosts();
+  }, []);
+
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+      showNotice("success", "Connection restored. Live feed synchronized.");
+      loadPosts();
+    }
+    function handleOffline() {
+      setIsOnline(false);
+      showNotice("info", "You are currently offline. Drafts will save locally.");
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   useEffect(() => {
@@ -995,6 +1015,26 @@ function App() {
       <LeftRail activeNav={activeNav} onNavClick={handleNavClick} />
 
       <main className="main-stage">
+        {!isOnline && (
+          <div
+            className="offline-banner"
+            style={{
+              background: "#f59e0b",
+              color: "#fff",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              marginBottom: "12px",
+              fontSize: "13px",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <AlertCircle size={16} />
+            <span>You are currently offline. Feed is operating in offline mode.</span>
+          </div>
+        )}
         <TopBar
           currentUser={currentUser}
           menuOpen={menuOpen}
