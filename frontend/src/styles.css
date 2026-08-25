@@ -2050,6 +2050,32 @@ a:focus-visible {
   top: 16px;
 }
 
+/* Feed Density Modes */
+.feed-compact {
+  gap: 10px !important;
+}
+
+.feed-compact .post-card {
+  padding: 14px 18px !important;
+  border-radius: 16px !important;
+}
+
+.feed-compact .post-author .avatar {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 13px !important;
+}
+
+.feed-compact .post-copy {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.feed-compact .post-image {
+  max-height: 320px !important;
+}
+
+
 
 
 

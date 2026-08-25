@@ -12,6 +12,7 @@ function FeedColumn({
   currentUser,
   draftSaved,
   expandedPostId,
+  feedDensity = "cozy",
   feedFilter,
   loadingPosts,
   maxPostLength,
@@ -35,6 +36,7 @@ function FeedColumn({
   onRemoveImage,
   onReportPost,
   onToggleComments,
+  onToggleFeedDensity,
   onVotePoll,
   postForm,
   postLoading,
@@ -440,21 +442,62 @@ function FeedColumn({
         visibleCount={visiblePosts.length}
       />
 
-      <div className="filter-row">
-        {feedFilters.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`filter-chip ${feedFilter === item.id ? "active" : ""}`}
-            onClick={() => onFeedFilterChange(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
+      <div className="filter-row-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", margin: "14px 0 10px" }}>
+        <div className="filter-row" style={{ flex: 1, margin: 0 }}>
+          {feedFilters.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`filter-chip ${feedFilter === item.id ? "active" : ""}`}
+              onClick={() => onFeedFilterChange(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        {onToggleFeedDensity && (
+          <div className="density-toggle" style={{ display: "flex", gap: "4px", background: "var(--surface-soft, #f1f5f9)", padding: "2px", borderRadius: "8px" }}>
+            <button
+              type="button"
+              onClick={() => onToggleFeedDensity("cozy")}
+              title="Comfortable feed spacing"
+              style={{
+                border: "none",
+                background: feedDensity === "cozy" ? "var(--surface-strong, #fff)" : "transparent",
+                color: feedDensity === "cozy" ? "var(--primary, #147bff)" : "var(--muted, #64748b)",
+                padding: "3px 8px",
+                borderRadius: "6px",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Cozy
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggleFeedDensity("compact")}
+              title="Compact high-density feed"
+              style={{
+                border: "none",
+                background: feedDensity === "compact" ? "var(--surface-strong, #fff)" : "transparent",
+                color: feedDensity === "compact" ? "var(--primary, #147bff)" : "var(--muted, #64748b)",
+                padding: "3px 8px",
+                borderRadius: "6px",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Compact
+            </button>
+          </div>
+        )}
       </div>
 
       {loadingPosts ? (
-        <div className="feed-list">
+        <div className={`feed-list ${feedDensity === "compact" ? "feed-compact" : ""}`}>
           {[1, 2, 3].map((i) => (
             <div
               key={i}
@@ -531,7 +574,7 @@ function FeedColumn({
         </div>
       ) : null}
 
-      <div className="feed-list">
+      <div className={`feed-list ${feedDensity === "compact" ? "feed-compact" : ""}`}>
         {visiblePosts.map((post) => (
           <PostCard
             key={post._id}

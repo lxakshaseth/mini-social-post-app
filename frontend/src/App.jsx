@@ -59,6 +59,7 @@ function App() {
   const [activityTab, setActivityTab] = useState("message");
   const [activeNav, setActiveNav] = useState("Social");
   const [themeMode, setThemeMode] = useState(() => localStorage.getItem(THEME_KEY) || "light");
+  const [feedDensity, setFeedDensity] = useState(() => localStorage.getItem("taskplanet-feed-density") || "cozy");
   const [expandedPostId, setExpandedPostId] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionModal, setActionModal] = useState(null);
@@ -782,6 +783,16 @@ function App() {
     });
   }
 
+  function handleToggleFeedDensity(mode) {
+    playToggle();
+    setFeedDensity(mode);
+    localStorage.setItem("taskplanet-feed-density", mode);
+    setFlash({
+      type: "info",
+      text: mode === "compact" ? "Switched to compact feed view." : "Switched to comfortable feed view.",
+    });
+  }
+
   function handleThemeToggle() {
     playToggle();
     setThemeMode((current) => {
@@ -1179,6 +1190,7 @@ function App() {
               currentUser={currentUser}
               draftSaved={draftSaved}
               expandedPostId={expandedPostId}
+              feedDensity={feedDensity}
               feedFilter={feedFilter}
               loadingPosts={loadingPosts}
               maxPostLength={MAX_POST_LENGTH}
@@ -1204,6 +1216,7 @@ function App() {
               onRemoveImage={removeSelectedImage}
               onReportPost={handleReportPost}
               onToggleComments={setExpandedPostId}
+              onToggleFeedDensity={handleToggleFeedDensity}
               onVotePoll={handleVotePoll}
               postForm={postForm}
               postLoading={postLoading}
