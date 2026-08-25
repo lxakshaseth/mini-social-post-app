@@ -58,7 +58,14 @@ function App() {
   const [composerFilter, setComposerFilter] = useState("all");
   const [activityTab, setActivityTab] = useState("message");
   const [activeNav, setActiveNav] = useState("Social");
-  const [themeMode, setThemeMode] = useState(() => localStorage.getItem(THEME_KEY) || "light");
+  const [themeMode, setThemeMode] = useState(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved) return saved;
+    if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "night";
+    }
+    return "light";
+  });
   const [feedDensity, setFeedDensity] = useState(() => localStorage.getItem("taskplanet-feed-density") || "cozy");
   const [expandedPostId, setExpandedPostId] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -100,6 +107,19 @@ function App() {
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    function handleThemeChange(e) {
+      if (!localStorage.getItem(THEME_KEY)) {
+        setThemeMode(e.matches ? "night" : "light");
+      }
+    }
+    mediaQuery.addEventListener?.("change", handleThemeChange);
+    return () => {
+      mediaQuery.removeEventListener?.("change", handleThemeChange);
     };
   }, []);
 
