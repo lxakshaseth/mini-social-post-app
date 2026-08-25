@@ -451,4 +451,38 @@ export function exportBookmarksToJson(posts = []) {
   URL.revokeObjectURL(url);
 }
 
+export function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+    return true;
+  } catch (err) {
+    console.warn(`[Storage] Failed to set ${key}:`, err?.message);
+    return false;
+  }
+}
+
+export function safeGetItem(key, fallback = null) {
+  try {
+    const item = localStorage.getItem(key);
+    if (item === null) return fallback;
+    try {
+      return JSON.parse(item);
+    } catch {
+      return item;
+    }
+  } catch (err) {
+    return fallback;
+  }
+}
+
+export function safeRemoveItem(key) {
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
 
