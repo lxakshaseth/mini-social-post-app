@@ -40,6 +40,11 @@ export const profileMenuItems = [
         label: "Activate Premium Plus",
         description: "Advanced growth, analytics, and priority support.",
       },
+      {
+        label: "Export Bookmarks",
+        action: "export_bookmarks",
+        description: "Download JSON backup of all saved bookmarks.",
+      },
     ],
   },
   {
@@ -418,4 +423,32 @@ export function calculateReadingTime(text = "") {
   const minutes = Math.ceil(words / 180);
   return minutes <= 1 ? "< 1 min read" : `${minutes} min read`;
 }
+
+export function exportBookmarksToJson(posts = []) {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    totalBookmarks: posts.length,
+    bookmarks: posts.map((post) => ({
+      id: post._id,
+      author: post.authorName,
+      handle: post.authorHandle,
+      text: post.text,
+      createdAt: post.createdAt,
+      imageUrl: post.imageUrl || null,
+      likesCount: post.likes?.length || 0,
+      commentsCount: post.comments?.length || 0,
+    })),
+  };
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `taskplanet-bookmarks-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 

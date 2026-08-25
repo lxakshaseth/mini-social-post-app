@@ -28,6 +28,7 @@ import {
 import {
   compressImage,
   engagementScore,
+  exportBookmarksToJson,
   extractTrendingTopics,
   formatDate,
   getStoredUser,
@@ -847,6 +848,17 @@ function App() {
 
     if (item.label === "Activate Premium") {
       openFeatureDrawer("premium");
+      return;
+    }
+
+    if (item.action === "export_bookmarks" || item.label === "Export Bookmarks") {
+      const saved = posts.filter((p) => currentUser?.savedPosts?.includes(p._id));
+      if (!saved.length) {
+        showNotice("info", "No saved bookmarks found to export.");
+        return;
+      }
+      exportBookmarksToJson(saved);
+      showNotice("success", `Exported ${saved.length} bookmarks successfully!`);
       return;
     }
 

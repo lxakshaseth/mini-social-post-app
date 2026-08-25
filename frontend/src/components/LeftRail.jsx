@@ -1,9 +1,10 @@
-import { CheckCircle2, Compass, House, LayoutGrid } from "lucide-react";
+import { Bookmark, CheckCircle2, Compass, House, LayoutGrid } from "lucide-react";
 import { heroHighlights, navigationItems } from "../utils";
 
 const iconMap = {
   Home: House,
   Social: LayoutGrid,
+  Bookmarks: Bookmark,
   Discover: Compass,
 };
 
