@@ -213,12 +213,54 @@ function FeedColumn({
         ) : null}
 
         <div
+          className="composer-templates-bar"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            margin: "6px 0",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: "12px", color: "var(--muted, #64748b)", fontWeight: 500 }}>
+            Templates:
+          </span>
+          {[
+            { label: "🚀 Project", text: "🚀 Project Update: Excited to share what we've been building!\n\n#buildinpublic" },
+            { label: "💡 Dev Tip", text: "💡 Quick Tip: Here is something helpful I discovered today:\n\n#devtips" },
+            { label: "🎉 Milestone", text: "🎉 Big Milestone reached! Huge thanks to the community.\n\n#milestone" },
+            { label: "❓ Question", text: "❓ Community Question: What is your favorite approach for\n\n#discussion" },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => {
+                const nextText = postForm.text ? `${item.text}\n\n${postForm.text}` : item.text;
+                onPostTextChange(nextText);
+              }}
+              style={{
+                background: "rgba(20, 123, 255, 0.05)",
+                border: "1px solid rgba(20, 123, 255, 0.15)",
+                color: "var(--primary, #147bff)",
+                borderRadius: "6px",
+                padding: "2px 8px",
+                fontSize: "12px",
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div
           className="composer-emoji-bar"
           style={{
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            margin: "8px 0 4px",
+            margin: "4px 0 6px",
             flexWrap: "wrap",
           }}
         >
