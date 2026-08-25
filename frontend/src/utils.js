@@ -397,3 +397,12 @@ export function downloadPostCardImage(post) {
     }
   });
 }
+
+export function calculateReadingTime(text = "") {
+  if (!text || typeof text !== "string") return "";
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  if (words < 25) return "";
+  const minutes = Math.ceil(words / 180);
+  return minutes <= 1 ? "< 1 min read" : `${minutes} min read`;
+}
+

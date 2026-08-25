@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Download, Edit3, Eye, Flag, Heart, Image as ImageIcon, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
 import { getImageUrl, recordPostView } from "../api";
-import { colorFromText, downloadPostCardImage, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
+import { colorFromText, downloadPostCardImage, engagementScore, formatDate, highlightText, relativeTime, calculateReadingTime } from "../utils";
 import Avatar from "./Avatar";
 
 function PostCard({
@@ -40,6 +40,8 @@ function PostCard({
       recordPostView(post._id);
     }
   }, [post._id]);
+
+  const readingTime = calculateReadingTime(post.text);
 
   const isAuthor =
     currentUser &&
@@ -137,6 +139,11 @@ function PostCard({
         </div>
 
         <div className="post-meta" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {readingTime && (
+            <span className="reading-time-pill" title="Estimated reading time">
+              {readingTime}
+            </span>
+          )}
           <span>{relativeTime(post.createdAt)}</span>
           <div style={{ position: "relative" }}>
             <button
