@@ -895,17 +895,41 @@ function PostCard({
           )}
         </div>
 
-        <div className="comment-composer">
+        <div className="comment-composer" style={{ position: "relative" }}>
           <input
             type="text"
+            maxLength={280}
             value={commentDrafts[post._id] || ""}
             onChange={(event) => onCommentChange(post._id, event.target.value)}
-            placeholder="Write a comment"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                onCommentSubmit(post._id);
+              }
+            }}
+            placeholder="Write a comment... (Press Enter to send)"
+            title="Press Enter to send comment"
           />
+          {(commentDrafts[post._id] || "").length > 200 && (
+            <span
+              style={{
+                position: "absolute",
+                right: "48px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: "10px",
+                fontWeight: 600,
+                color: (commentDrafts[post._id] || "").length > 260 ? "#ef4444" : "var(--muted, #64748b)",
+              }}
+            >
+              {280 - (commentDrafts[post._id] || "").length}
+            </span>
+          )}
           <button
             type="button"
             onClick={() => onCommentSubmit(post._id)}
-            disabled={busyPostId === post._id}
+            disabled={busyPostId === post._id || !(commentDrafts[post._id] || "").trim()}
+            title="Send comment"
           >
             <Send size={16} />
           </button>
