@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Download, Edit3, Eye, Flag, Heart, Image as ImageIcon, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
 import { getImageUrl, recordPostView } from "../api";
-import { colorFromText, downloadPostCardImage, engagementScore, formatDate, highlightText, relativeTime, calculateReadingTime } from "../utils";
+import { colorFromText, downloadPostCardImage, engagementScore, formatDate, highlightText, relativeTime, calculateReadingTime, isTrendingPost } from "../utils";
 import Avatar from "./Avatar";
 
 function PostCard({
@@ -106,23 +106,40 @@ function PostCard({
 
   return (
     <article className="post-card card" id={`post-${post._id}`}>
-      {post.isPinned && (
-        <div
-          className="post-pinned-badge"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "12px",
-            fontWeight: 600,
-            color: "var(--primary, #1b84ff)",
-            marginBottom: "8px",
-          }}
-        >
-          <Pin size={13} style={{ transform: "rotate(45deg)" }} />
-          <span>Pinned Post</span>
-        </div>
-      )}
+      <div className="post-badges-row" style={{ display: "flex", gap: "10px", marginBottom: "8px", flexWrap: "wrap" }}>
+        {post.isPinned && (
+          <div
+            className="post-pinned-badge"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "var(--primary, #1b84ff)",
+            }}
+          >
+            <Pin size={13} style={{ transform: "rotate(45deg)" }} />
+            <span>Pinned Post</span>
+          </div>
+        )}
+        {isTrendingPost(post) && (
+          <div
+            className="post-trending-badge"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "#ff8a00",
+            }}
+          >
+            <span>🔥</span>
+            <span>Trending</span>
+          </div>
+        )}
+      </div>
       <div className="post-header">
         <div className="post-author">
           <Avatar

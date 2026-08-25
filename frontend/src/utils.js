@@ -138,7 +138,20 @@ export function relativeTime(value) {
 }
 
 export function engagementScore(post) {
-  return post.likes.length * 2 + post.comments.length * 3 + (post.imageUrl ? 2 : 0);
+  return (post.likes?.length || 0) * 2 + (post.comments?.length || 0) * 3 + (post.imageUrl ? 2 : 0);
+}
+
+export function calculateEngagementRate(post) {
+  if (!post) return 0;
+  const interactions = (post.likes?.length || 0) + (post.comments?.length || 0) * 2 + (post.poll?.options?.reduce((sum, o) => sum + (o.votes?.length || 0), 0) || 0);
+  const views = Math.max(post.viewsCount || 1, 1);
+  return Math.min(100, Math.round((interactions / views) * 100));
+}
+
+export function isTrendingPost(post) {
+  if (!post) return false;
+  const score = engagementScore(post);
+  return score >= 6 || (post.likes?.length >= 3) || (post.comments?.length >= 2);
 }
 
 export function extractTrendingTopics(posts) {
