@@ -28,6 +28,7 @@ import {
 import {
   compressImage,
   engagementScore,
+  exportBookmarksToJson,
   extractTrendingTopics,
   formatDate,
   getStoredUser,
@@ -57,7 +58,15 @@ function App() {
   const [composerFilter, setComposerFilter] = useState("all");
   const [activityTab, setActivityTab] = useState("message");
   const [activeNav, setActiveNav] = useState("Social");
-  const [themeMode, setThemeMode] = useState(() => localStorage.getItem(THEME_KEY) || "light");
+  const [themeMode, setThemeMode] = useState(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved) return saved;
+    if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "night";
+    }
+    return "light";
+  });
+  const [feedDensity, setFeedDensity] = useState(() => localStorage.getItem("taskplanet-feed-density") || "cozy");
   const [expandedPostId, setExpandedPostId] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionModal, setActionModal] = useState(null);
@@ -98,6 +107,19 @@ function App() {
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    function handleThemeChange(e) {
+      if (!localStorage.getItem(THEME_KEY)) {
+        setThemeMode(e.matches ? "night" : "light");
+      }
+    }
+    mediaQuery.addEventListener?.("change", handleThemeChange);
+    return () => {
+      mediaQuery.removeEventListener?.("change", handleThemeChange);
     };
   }, []);
 
@@ -781,6 +803,16 @@ function App() {
     });
   }
 
+  function handleToggleFeedDensity(mode) {
+    playToggle();
+    setFeedDensity(mode);
+    localStorage.setItem("taskplanet-feed-density", mode);
+    setFlash({
+      type: "info",
+      text: mode === "compact" ? "Switched to compact feed view." : "Switched to comfortable feed view.",
+    });
+  }
+
   function handleThemeToggle() {
     playToggle();
     setThemeMode((current) => {
@@ -847,6 +879,17 @@ function App() {
 
     if (item.label === "Activate Premium") {
       openFeatureDrawer("premium");
+      return;
+    }
+
+    if (item.action === "export_bookmarks" || item.label === "Export Bookmarks") {
+      const saved = posts.filter((p) => currentUser?.savedPosts?.includes(p._id));
+      if (!saved.length) {
+        showNotice("info", "No saved bookmarks found to export.");
+        return;
+      }
+      exportBookmarksToJson(saved);
+      showNotice("success", `Exported ${saved.length} bookmarks successfully!`);
       return;
     }
 
@@ -971,12 +1014,26 @@ function App() {
 
   if (searchTerm.trim()) {
     const query = searchTerm.trim().toLowerCase();
-    visiblePosts = visiblePosts.filter((post) =>
-      [post.authorName, post.authorHandle, post.text, post.comments.map((c) => c.username).join(" "), post.likes.map((l) => l.username).join(" ")]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
+    if (query.startsWith("#")) {
+      const tag = query.slice(1);
+      visiblePosts = visiblePosts.filter((post) =>
+        (post.text || "").toLowerCase().includes(query) ||
+        (post.text || "").toLowerCase().includes(`#${tag}`)
+      );
+    } else if (query.startsWith("@")) {
+      const handle = query.slice(1);
+      visiblePosts = visiblePosts.filter((post) =>
+        post.authorHandle.toLowerCase().includes(handle) ||
+        post.comments.some((c) => c.handle?.toLowerCase().includes(handle))
+      );
+    } else {
+      visiblePosts = visiblePosts.filter((post) =>
+        [post.authorName, post.authorHandle, post.text, post.comments.map((c) => c.username).join(" "), post.likes.map((l) => l.username).join(" ")]
+          .join(" ")
+          .toLowerCase()
+          .includes(query)
+      );
+    }
   }
 
   if (feedFilter === "polls") {
@@ -1018,12 +1075,15 @@ function App() {
 
   return (
     <div className={`app-shell ${themeMode === "night" ? "night-mode" : ""}`}>
+      <a href="#main-feed" className="skip-to-content">
+        Skip to main content
+      </a>
       <div className="background-orb orb-one" />
       <div className="background-orb orb-two" />
 
       <LeftRail activeNav={activeNav} onNavClick={handleNavClick} />
 
-      <main className="main-stage">
+      <main className="main-stage" id="main-feed" role="main">
         {!isOnline && (
           <div
             className="offline-banner"
@@ -1164,6 +1224,7 @@ function App() {
               currentUser={currentUser}
               draftSaved={draftSaved}
               expandedPostId={expandedPostId}
+              feedDensity={feedDensity}
               feedFilter={feedFilter}
               loadingPosts={loadingPosts}
               maxPostLength={MAX_POST_LENGTH}
@@ -1189,6 +1250,7 @@ function App() {
               onRemoveImage={removeSelectedImage}
               onReportPost={handleReportPost}
               onToggleComments={setExpandedPostId}
+              onToggleFeedDensity={handleToggleFeedDensity}
               onVotePoll={handleVotePoll}
               postForm={postForm}
               postLoading={postLoading}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BarChart2, Bookmark, Check, CheckCircle2, Copy, Download, Edit3, Eye, Flag, Heart, Image as ImageIcon, MessageSquare, MoreHorizontal, Pin, Send, Share2, Sparkles, Trash2, Vote, X } from "lucide-react";
 import { getImageUrl, recordPostView } from "../api";
-import { colorFromText, downloadPostCardImage, engagementScore, formatDate, highlightText, relativeTime } from "../utils";
+import { colorFromText, downloadPostCardImage, engagementScore, formatDate, highlightText, relativeTime, calculateReadingTime, isTrendingPost } from "../utils";
 import Avatar from "./Avatar";
 
 function PostCard({
@@ -34,12 +34,15 @@ function PostCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
   const [exportingCard, setExportingCard] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     if (post._id) {
       recordPostView(post._id);
     }
   }, [post._id]);
+
+  const readingTime = calculateReadingTime(post.text);
 
   const isAuthor =
     currentUser &&
@@ -104,23 +107,40 @@ function PostCard({
 
   return (
     <article className="post-card card" id={`post-${post._id}`}>
-      {post.isPinned && (
-        <div
-          className="post-pinned-badge"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "12px",
-            fontWeight: 600,
-            color: "var(--primary, #1b84ff)",
-            marginBottom: "8px",
-          }}
-        >
-          <Pin size={13} style={{ transform: "rotate(45deg)" }} />
-          <span>Pinned Post</span>
-        </div>
-      )}
+      <div className="post-badges-row" style={{ display: "flex", gap: "10px", marginBottom: "8px", flexWrap: "wrap" }}>
+        {post.isPinned && (
+          <div
+            className="post-pinned-badge"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "var(--primary, #1b84ff)",
+            }}
+          >
+            <Pin size={13} style={{ transform: "rotate(45deg)" }} />
+            <span>Pinned Post</span>
+          </div>
+        )}
+        {isTrendingPost(post) && (
+          <div
+            className="post-trending-badge"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "#ff8a00",
+            }}
+          >
+            <span>🔥</span>
+            <span>Trending</span>
+          </div>
+        )}
+      </div>
       <div className="post-header">
         <div className="post-author">
           <Avatar
@@ -137,6 +157,11 @@ function PostCard({
         </div>
 
         <div className="post-meta" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {readingTime && (
+            <span className="reading-time-pill" title="Estimated reading time">
+              {readingTime}
+            </span>
+          )}
           <span>{relativeTime(post.createdAt)}</span>
           <div style={{ position: "relative" }}>
             <button
@@ -555,12 +580,38 @@ function PostCard({
 
       {post.imageUrl ? (
         <div
-          className="post-image-shell"
+          className={`post-image-shell ${imageLoaded ? "loaded" : "loading"}`}
           onClick={() => onImageClick && onImageClick(getImageUrl(post.imageUrl))}
-          style={{ cursor: "zoom-in" }}
+          style={{ cursor: "zoom-in", position: "relative", overflow: "hidden", borderRadius: "12px" }}
           title="Click to view full image"
         >
-          <img src={getImageUrl(post.imageUrl)} alt="Post attachment" />
+          {!imageLoaded && (
+            <div
+              className="image-skeleton"
+              style={{
+                width: "100%",
+                height: "220px",
+                background: "var(--surface-soft, #f1f5f9)",
+                animation: "pulse 1.5s infinite ease-in-out",
+                borderRadius: "12px",
+              }}
+            />
+          )}
+          <img
+            src={getImageUrl(post.imageUrl)}
+            alt="Post attachment"
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setImageLoaded(true)}
+            style={{
+              display: imageLoaded ? "block" : "none",
+              width: "100%",
+              maxHeight: "480px",
+              objectFit: "cover",
+              borderRadius: "12px",
+              transition: "transform 0.3s ease",
+            }}
+          />
         </div>
       ) : null}
 
@@ -844,17 +895,41 @@ function PostCard({
           )}
         </div>
 
-        <div className="comment-composer">
+        <div className="comment-composer" style={{ position: "relative" }}>
           <input
             type="text"
+            maxLength={280}
             value={commentDrafts[post._id] || ""}
             onChange={(event) => onCommentChange(post._id, event.target.value)}
-            placeholder="Write a comment"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                onCommentSubmit(post._id);
+              }
+            }}
+            placeholder="Write a comment... (Press Enter to send)"
+            title="Press Enter to send comment"
           />
+          {(commentDrafts[post._id] || "").length > 200 && (
+            <span
+              style={{
+                position: "absolute",
+                right: "48px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: "10px",
+                fontWeight: 600,
+                color: (commentDrafts[post._id] || "").length > 260 ? "#ef4444" : "var(--muted, #64748b)",
+              }}
+            >
+              {280 - (commentDrafts[post._id] || "").length}
+            </span>
+          )}
           <button
             type="button"
             onClick={() => onCommentSubmit(post._id)}
-            disabled={busyPostId === post._id}
+            disabled={busyPostId === post._id || !(commentDrafts[post._id] || "").trim()}
+            title="Send comment"
           >
             <Send size={16} />
           </button>

@@ -1,4 +1,4 @@
-﻿// Security Headers and Lightweight Rate Limiting Middleware
+// Security Headers and Lightweight Rate Limiting Middleware
 
 function securityHeaders(_req, res, next) {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -49,7 +49,20 @@ function createRateLimiter({ windowMs = 15 * 60 * 1000, maxRequests = 100, messa
   };
 }
 
+function responseTimeMiddleware(req, res, next) {
+  const start = process.hrtime();
+  const originalWriteHead = res.writeHead;
+  res.writeHead = function (...args) {
+    const diff = process.hrtime(start);
+    const timeInMs = (diff[0] * 1e3 + diff[1] * 1e-6).toFixed(2);
+    res.setHeader("X-Response-Time", `${timeInMs}ms`);
+    return originalWriteHead.apply(this, args);
+  };
+  next();
+}
+
 module.exports = {
   securityHeaders,
   createRateLimiter,
+  responseTimeMiddleware,
 };

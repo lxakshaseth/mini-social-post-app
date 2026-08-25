@@ -40,6 +40,11 @@ export const profileMenuItems = [
         label: "Activate Premium Plus",
         description: "Advanced growth, analytics, and priority support.",
       },
+      {
+        label: "Export Bookmarks",
+        action: "export_bookmarks",
+        description: "Download JSON backup of all saved bookmarks.",
+      },
     ],
   },
   {
@@ -138,7 +143,20 @@ export function relativeTime(value) {
 }
 
 export function engagementScore(post) {
-  return post.likes.length * 2 + post.comments.length * 3 + (post.imageUrl ? 2 : 0);
+  return (post.likes?.length || 0) * 2 + (post.comments?.length || 0) * 3 + (post.imageUrl ? 2 : 0);
+}
+
+export function calculateEngagementRate(post) {
+  if (!post) return 0;
+  const interactions = (post.likes?.length || 0) + (post.comments?.length || 0) * 2 + (post.poll?.options?.reduce((sum, o) => sum + (o.votes?.length || 0), 0) || 0);
+  const views = Math.max(post.viewsCount || 1, 1);
+  return Math.min(100, Math.round((interactions / views) * 100));
+}
+
+export function isTrendingPost(post) {
+  if (!post) return false;
+  const score = engagementScore(post);
+  return score >= 6 || (post.likes?.length >= 3) || (post.comments?.length >= 2);
 }
 
 export function extractTrendingTopics(posts) {
@@ -397,3 +415,74 @@ export function downloadPostCardImage(post) {
     }
   });
 }
+
+export function calculateReadingTime(text = "") {
+  if (!text || typeof text !== "string") return "";
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  if (words < 25) return "";
+  const minutes = Math.ceil(words / 180);
+  return minutes <= 1 ? "< 1 min read" : `${minutes} min read`;
+}
+
+export function exportBookmarksToJson(posts = []) {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    totalBookmarks: posts.length,
+    bookmarks: posts.map((post) => ({
+      id: post._id,
+      author: post.authorName,
+      handle: post.authorHandle,
+      text: post.text,
+      createdAt: post.createdAt,
+      imageUrl: post.imageUrl || null,
+      likesCount: post.likes?.length || 0,
+      commentsCount: post.comments?.length || 0,
+    })),
+  };
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `taskplanet-bookmarks-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+    return true;
+  } catch (err) {
+    console.warn(`[Storage] Failed to set ${key}:`, err?.message);
+    return false;
+  }
+}
+
+export function safeGetItem(key, fallback = null) {
+  try {
+    const item = localStorage.getItem(key);
+    if (item === null) return fallback;
+    try {
+      return JSON.parse(item);
+    } catch {
+      return item;
+    }
+  } catch (err) {
+    return fallback;
+  }
+}
+
+export function safeRemoveItem(key) {
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
+

@@ -1,4 +1,4 @@
-﻿# TaskPlanet Mini Social Post Application 🚀
+# TaskPlanet Mini Social Post Application 🚀
 
 A high-performance, desktop-first social post web application inspired by the **TaskPlanet** social feed. Built with a robust **React + Vite** frontend, **Node.js + Express** backend, and **MongoDB Atlas** database adhering to all assignment requirements with 2 core collections (`users` and `posts`).
 
@@ -48,6 +48,16 @@ A high-performance, desktop-first social post web application inspired by the **
 ### 10. ⚡ Feed Filtering & Multi-Criteria Sorting
 - **Filters**: `All Posts`, `Polls`, `Media`, `Saved`, `For You`, `Most Liked`, `Most Discussed`.
 - **Search with Keyword Highlighting**: Real-time search across post text, author name, and handles with visual `<mark>` highlights.
+- **Hashtag & Handle Token Filter**: Prefix search queries with `#` (e.g. `#buildinpublic`) or `@` (e.g. `@akshat`) for targeted exploration.
+
+### 11. ⏱️ Reading Time Estimator & Trending Badges
+- **Estimated Reading Time**: Long posts automatically compute and display formatted reading duration pills (`📖 2 min read`).
+- **Trending & Popular Badges**: Posts with high community engagement and interaction velocities receive real-time `🔥 Trending` visual badges.
+
+### 12. ✍️ Composer Templates & Compact Feed Modes
+- **Starter Prompt Templates**: Quick launch buttons for Project Updates, Dev Tips, Milestones, and Questions.
+- **Feed Density Toggle**: Switch between `Cozy` (spacious cards) and `Compact` (high-density list) modes with persistent storage.
+- **Bookmarks JSON Backup Export**: One-click download of saved bookmarks as formatted JSON backups.
 
 ---
 
@@ -60,7 +70,7 @@ A high-performance, desktop-first social post web application inspired by the **
 | **Database** | MongoDB Atlas (Strict 2 collections: `users` & `posts`) |
 | **Audio Engine** | Web Audio API (Synthesized oscillators) |
 | **Share Engine** | HTML5 Canvas 2D Rendering Engine |
-| **Testing** | Node.js Assert Suite + Custom System Integrity Runner |
+| **Testing** | Node.js Assert Suite + Custom System Integrity Runner (12 Checks) |
 
 ---
 
@@ -130,7 +140,7 @@ A high-performance, desktop-first social post web application inspired by the **
 | Endpoint | Method | Auth | Description |
 |---|---|---|---|
 | `/api/health` | GET | Public | Quick health check & DB status |
-| `/api/system/diagnostics` | GET | Public | Full system check (uptime, memory, latency, storage) |
+| `/api/system/diagnostics` | GET | Public | Full system check (uptime, memory, DB collection stats, latency, storage) |
 | `/api/auth/signup` | POST | Public (Rate Limited) | Register a new user |
 | `/api/auth/login` | POST | Public (Rate Limited) | Login and receive JWT token |
 | `/api/auth/me` | GET | Bearer Token | Fetch current authenticated user |
@@ -145,7 +155,7 @@ A high-performance, desktop-first social post web application inspired by the **
 | `/api/posts/:id/view` | POST | Public | Atomically increment post view count |
 | `/api/posts/:id/bookmark` | POST | Bearer Token | Toggle bookmarking a post |
 | `/api/posts/:id/report` | POST | Bearer Token | Submit post moderation report |
-| `/api/posts/:id/comments` | POST | Bearer Token | Add comment to a post |
+| `/api/posts/:id/comments` | POST | Bearer Token | Add comment to a post (Enter to send) |
 | `/api/posts/:id/comments/:cId` | DELETE | Bearer Token | Delete comment |
 | `/api/posts/:id/comments/:cId/like` | POST | Bearer Token | Toggle like on a comment |
 
@@ -171,7 +181,7 @@ A high-performance, desktop-first social post web application inspired by the **
 ```bash
 cd backend
 npm install
-npm run test:all       # Runs unit tests & full system integrity validation
+npm run test:all       # Runs unit tests & full 12-point system integrity validation
 npm run dev            # Starts server on http://localhost:5000
 ```
 
@@ -199,8 +209,13 @@ npm run dev            # Starts dev server on http://localhost:5173
   [OK] User model defines authentication fields and savedPosts reference array
   [OK] Sanitization middleware cleans malicious HTML tags and scripts
   [OK] Poll vote calculation handles percentage distributions accurately
+  [OK] Security headers middleware sets standard protection headers
+  [OK] Response time middleware attaches X-Response-Time timing header
+  [OK] Engagement scoring calculates weighted interactions correctly
+  [OK] Reading time estimator produces accurate reading duration
 
 -------------------------------------------------
-System Check Complete: 8 checks passed, 0 failed.
+System Check Complete: 12 checks passed, 0 failed.
 -------------------------------------------------
 ```
+

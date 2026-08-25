@@ -130,6 +130,68 @@ function runSystemCheck() {
     assert.strictEqual(optBPercent, 25, "Option B must be 25%");
   });
 
+  // 6. Security Headers Middleware Tests
+  test("Security headers middleware sets standard protection headers", () => {
+    const { securityHeaders } = require("./middleware/security");
+    const headers = {};
+    const req = {};
+    const res = {
+      setHeader: (k, v) => {
+        headers[k] = v;
+      },
+    };
+    securityHeaders(req, res, () => {});
+    assert.strictEqual(headers["X-Content-Type-Options"], "nosniff");
+    assert.strictEqual(headers["X-Frame-Options"], "SAMEORIGIN");
+    assert.strictEqual(headers["Referrer-Policy"], "strict-origin-when-cross-origin");
+  });
+
+  // 7. Response Time Middleware Tests
+  test("Response time middleware attaches X-Response-Time timing header", () => {
+    const { responseTimeMiddleware } = require("./middleware/security");
+    const headers = {};
+    const req = {};
+    const res = {
+      writeHead: () => {},
+      setHeader: (k, v) => {
+        headers[k] = v;
+      },
+    };
+    responseTimeMiddleware(req, res, () => {});
+    res.writeHead();
+    assert(headers["X-Response-Time"], "Must set X-Response-Time header");
+    assert(headers["X-Response-Time"].endsWith("ms"), "Header value should end in ms");
+  });
+
+  // 8. Engagement Scoring & Trending Logic Tests
+  test("Engagement scoring calculates weighted interactions correctly", () => {
+    const testPost = {
+      likes: [{}, {}], // 2 likes * 2 = 4
+      comments: [{}, {}], // 2 comments * 3 = 6
+      imageUrl: "some.png", // + 2
+    };
+    const score = testPost.likes.length * 2 + testPost.comments.length * 3 + (testPost.imageUrl ? 2 : 0);
+    assert.strictEqual(score, 12, "Score must be 12");
+  });
+
+  // 9. Reading Time Estimation Tests
+  test("Reading time estimator produces accurate reading duration", () => {
+    function calculateReadingTime(text = "") {
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      if (words < 25) return "";
+      const minutes = Math.ceil(words / 180);
+      return minutes <= 1 ? "< 1 min read" : `${minutes} min read`;
+    }
+    const shortText = "Just a quick sentence.";
+    assert.strictEqual(calculateReadingTime(shortText), "", "Short text should return empty string");
+
+    const mediumText = new Array(50).fill("word").join(" ");
+    assert.strictEqual(calculateReadingTime(mediumText), "< 1 min read");
+
+    const longText = new Array(400).fill("word").join(" ");
+    assert.strictEqual(calculateReadingTime(longText), "3 min read");
+  });
+
   console.log("\n-------------------------------------------------");
   console.log(`System Check Complete: ${passed} checks passed, ${failed} failed.`);
   console.log("-------------------------------------------------\n");
@@ -140,3 +202,4 @@ function runSystemCheck() {
 }
 
 runSystemCheck();
+

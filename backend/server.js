@@ -9,11 +9,12 @@ const postRoutes = require("./routes/postRoutes");
 const assistantRoutes = require("./routes/assistantRoutes");
 const systemRoutes = require("./routes/systemRoutes");
 const sanitizeInput = require("./middleware/sanitize");
-const { securityHeaders } = require("./middleware/security");
+const { securityHeaders, responseTimeMiddleware } = require("./middleware/security");
 
 const app = express();
 const port = process.env.PORT || 5000;
 
+app.use(responseTimeMiddleware);
 app.use(securityHeaders);
 app.use(
   cors({

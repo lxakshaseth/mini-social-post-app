@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity, CheckCircle2, XCircle, RefreshCw, Cpu, Database, HardDrive, ShieldCheck, X } from "lucide-react";
 import { fetchSystemDiagnostics } from "../api";
 
@@ -124,6 +124,14 @@ export default function SystemCheckModal({ isOpen, onClose }) {
                       {diagnostics.database?.host || "MongoDB Local/Atlas"}
                     </span>
                   </div>
+                  {diagnostics.database?.metrics && (
+                    <div className="diag-row">
+                      <span>Live Collection Counts</span>
+                      <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>
+                        {diagnostics.database.metrics.totalUsers} Users · {diagnostics.database.metrics.totalPosts} Posts · {diagnostics.database.metrics.totalPolls} Polls
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
