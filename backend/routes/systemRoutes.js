@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
@@ -39,6 +39,24 @@ router.get("/diagnostics", async (_req, res) => {
     }
   }
 
+  let collectionMetrics = null;
+  if (isDbConnected) {
+    try {
+      const Post = require("../models/Post");
+      const User = require("../models/User");
+      const [totalUsers, totalPosts, totalPolls] = await Promise.all([
+        User.countDocuments().catch(() => 0),
+        Post.countDocuments().catch(() => 0),
+        Post.countDocuments({ "poll.options.0": { $exists: true } }).catch(() => 0),
+      ]);
+      collectionMetrics = {
+        totalUsers,
+        totalPosts,
+        totalPolls,
+      };
+    } catch (_) {}
+  }
+
   const envCheck = {
     hasMongoUri: Boolean(process.env.MONGO_URI),
     hasJwtSecret: Boolean(process.env.JWT_SECRET),
@@ -69,6 +87,7 @@ router.get("/diagnostics", async (_req, res) => {
       ...getDatabaseStatus(),
       readyState: mongoose.connection.readyState,
       latencyMs: dbLatencyMs,
+      metrics: collectionMetrics,
     },
     storage: {
       uploadsDirectory: uploadsOk ? "ready & writable" : "error / non-writable",
