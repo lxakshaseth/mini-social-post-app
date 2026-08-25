@@ -34,6 +34,7 @@ function PostCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
   const [exportingCard, setExportingCard] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     if (post._id) {
@@ -579,12 +580,38 @@ function PostCard({
 
       {post.imageUrl ? (
         <div
-          className="post-image-shell"
+          className={`post-image-shell ${imageLoaded ? "loaded" : "loading"}`}
           onClick={() => onImageClick && onImageClick(getImageUrl(post.imageUrl))}
-          style={{ cursor: "zoom-in" }}
+          style={{ cursor: "zoom-in", position: "relative", overflow: "hidden", borderRadius: "12px" }}
           title="Click to view full image"
         >
-          <img src={getImageUrl(post.imageUrl)} alt="Post attachment" />
+          {!imageLoaded && (
+            <div
+              className="image-skeleton"
+              style={{
+                width: "100%",
+                height: "220px",
+                background: "var(--surface-soft, #f1f5f9)",
+                animation: "pulse 1.5s infinite ease-in-out",
+                borderRadius: "12px",
+              }}
+            />
+          )}
+          <img
+            src={getImageUrl(post.imageUrl)}
+            alt="Post attachment"
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setImageLoaded(true)}
+            style={{
+              display: imageLoaded ? "block" : "none",
+              width: "100%",
+              maxHeight: "480px",
+              objectFit: "cover",
+              borderRadius: "12px",
+              transition: "transform 0.3s ease",
+            }}
+          />
         </div>
       ) : null}
 
