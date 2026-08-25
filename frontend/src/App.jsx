@@ -994,12 +994,26 @@ function App() {
 
   if (searchTerm.trim()) {
     const query = searchTerm.trim().toLowerCase();
-    visiblePosts = visiblePosts.filter((post) =>
-      [post.authorName, post.authorHandle, post.text, post.comments.map((c) => c.username).join(" "), post.likes.map((l) => l.username).join(" ")]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
+    if (query.startsWith("#")) {
+      const tag = query.slice(1);
+      visiblePosts = visiblePosts.filter((post) =>
+        (post.text || "").toLowerCase().includes(query) ||
+        (post.text || "").toLowerCase().includes(`#${tag}`)
+      );
+    } else if (query.startsWith("@")) {
+      const handle = query.slice(1);
+      visiblePosts = visiblePosts.filter((post) =>
+        post.authorHandle.toLowerCase().includes(handle) ||
+        post.comments.some((c) => c.handle?.toLowerCase().includes(handle))
+      );
+    } else {
+      visiblePosts = visiblePosts.filter((post) =>
+        [post.authorName, post.authorHandle, post.text, post.comments.map((c) => c.username).join(" "), post.likes.map((l) => l.username).join(" ")]
+          .join(" ")
+          .toLowerCase()
+          .includes(query)
+      );
+    }
   }
 
   if (feedFilter === "polls") {
