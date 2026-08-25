@@ -1018,12 +1018,15 @@ function App() {
 
   return (
     <div className={`app-shell ${themeMode === "night" ? "night-mode" : ""}`}>
+      <a href="#main-feed" className="skip-to-content">
+        Skip to main content
+      </a>
       <div className="background-orb orb-one" />
       <div className="background-orb orb-two" />
 
       <LeftRail activeNav={activeNav} onNavClick={handleNavClick} />
 
-      <main className="main-stage">
+      <main className="main-stage" id="main-feed" role="main">
         {!isOnline && (
           <div
             className="offline-banner"
